@@ -1,0 +1,177 @@
+ORIENTACOES PARA ALTERAR O TEXTO DA ENTREGA 2
+=============================================
+
+Objetivo da revisao
+-------------------
+O texto antigo da Entrega 2 explicava a limpeza dos dados e a imputacao KNN da faixa etaria, mas ainda nao incorporava o pedido novo da professora:
+
+- dividir o dataset em treinamento e teste;
+- revisar tecnicas de pre-processamento que poderiam causar vazamento de dados;
+- refazer essas tecnicas apos a divisao;
+- normalizar usando parametros aprendidos no treino;
+- gravar os parametros e aplicar no teste;
+- entregar uma amostra do dataset para conferencia.
+
+
+1. O que manter do texto antigo
+-------------------------------
+Manter a explicacao da Parte 1 sobre:
+
+- origem dos dados OpenFDA;
+- amostragem de 36.000 registros;
+- reducao para 32.309 registros validos;
+- remocao de atributos com muitos valores ausentes;
+- remocao de registros sem occurcountry;
+- padronizacao de patient.patientsex;
+- escolha de nao usar patient.patientweight;
+- criacao da faixa etaria a partir de patient.patientonsetage e patient.patientonsetageunit;
+- uso do KNN para preencher faixas etarias ausentes.
+
+A regra da faixa etaria NAO mudou.
+
+Faixas usadas:
+
+- 0 a 2 anos: baby_early_childhood
+- 2 a 12 anos: child
+- 12 a 18 anos: adolescent
+- 18 a 30 anos: young_adult
+- 30 a 60 anos: adult
+- 60 anos ou mais: elderly
+
+
+2. O que corrigir no texto antigo
+---------------------------------
+Onde o texto antigo diz que a imputacao KNN foi aplicada diretamente no dataset final, adicionar uma observacao dizendo que, na versao revisada, essa etapa foi reorganizada para evitar vazamento de dados.
+
+Texto sugerido:
+
+"Na versao revisada da Entrega 2, a logica de criacao da faixa etaria foi preservada. A idade original continua sendo convertida para anos a partir dos atributos patient.patientonsetage e patient.patientonsetageunit, e as mesmas faixas etarias definidas anteriormente foram mantidas. A alteracao realizada foi no momento da imputacao por KNN: em vez de ajustar o KNN sobre todo o dataset, a base foi primeiro dividida em treinamento e teste. O KNN foi treinado apenas com registros do conjunto de treinamento que possuiam faixa etaria conhecida, sendo posteriormente aplicado aos registros sem faixa etaria do treino e do teste."
+
+
+3. Nova secao que deve ser adicionada: divisao treino/teste
+-----------------------------------------------------------
+Adicionar uma secao explicando:
+
+- split 70/30;
+- estratificacao pela variavel alvo serious;
+- treino com 22.616 registros;
+- teste com 9.693 registros;
+- preservacao da proporcao das classes.
+
+Texto sugerido:
+
+"Apos a preparacao inicial da base, foi realizada a divisao do dataset em conjuntos de treinamento e teste. Utilizou-se a proporcao de 70% para treinamento e 30% para teste, com estratificacao pela variavel alvo serious. Essa estrategia preserva a distribuicao das classes nos dois conjuntos e segue a recomendacao de manter o conjunto de teste separado das etapas que aprendem parametros dos dados."
+
+
+4. Nova secao que deve ser adicionada: prevencao de vazamento de dados
+----------------------------------------------------------------------
+Adicionar uma secao explicando o problema do fluxo antigo e a correcao.
+
+Texto sugerido:
+
+"A principal revisao realizada foi a prevencao de vazamento de dados. Na versao inicial, a imputacao KNN da faixa etaria era executada antes da separacao entre treinamento e teste. Como o KNN aprende padroes a partir dos dados disponiveis, essa abordagem poderia permitir que informacoes do futuro conjunto de teste influenciassem a preparacao dos dados de treinamento. Para corrigir isso, a faixa etaria foi recalculada a partir dos atributos originais de idade, os registros sem idade valida foram marcados como unknown, e a divisao treino/teste foi realizada antes da imputacao. O KNN foi ajustado somente no conjunto de treinamento."
+
+
+5. Nova secao que deve ser adicionada: feature engineering
+----------------------------------------------------------
+Explicar as 5 novas variaveis criadas:
+
+- feature_n_active_substances: quantidade de principios ativos no relato;
+- feature_n_drug_types: quantidade de tipos de caracterizacao do medicamento;
+- feature_has_medicinal_product: indica se ha produto medicinal identificado;
+- feature_multiple_drugs: indica se o relato envolve mais de um medicamento;
+- feature_is_usa: indica se o evento ocorreu nos Estados Unidos.
+
+Texto sugerido:
+
+"Foram criadas novas caracteristicas a partir dos atributos ja existentes, com o objetivo de representar informacoes relevantes de forma numerica ou binaria. As novas variaveis incluem a quantidade de principios ativos, a quantidade de tipos de medicamento, a existencia de produto medicinal identificado, a indicacao de multiplos medicamentos e a indicacao de ocorrencia nos Estados Unidos."
+
+
+6. Nova secao que deve ser adicionada: normalizacao
+--------------------------------------------------
+Explicar que a normalizacao foi feita corretamente:
+
+- StandardScaler ajustado apenas no treino;
+- parametros salvos no metadata;
+- mesmos parametros aplicados ao teste.
+
+Texto sugerido:
+
+"A normalizacao foi aplicada apenas aos atributos numericos patient.drug.count, feature_n_active_substances e feature_n_drug_types. O StandardScaler foi ajustado exclusivamente com os dados de treinamento, obtendo as medias e desvios padrao do treino. Esses parametros foram armazenados no arquivo data_preparation_metadata.json e posteriormente aplicados ao conjunto de teste, garantindo que o teste nao fosse utilizado para aprender parametros de transformacao."
+
+
+7. O que e o metadata e como explicar
+-------------------------------------
+O arquivo data_preparation_metadata.json nao e um dataset para modelagem. Ele e um arquivo de auditoria/reprodutibilidade.
+
+Ele mostra:
+
+- quantos registros existem no total, treino e teste;
+- quais features foram criadas;
+- quais colunas foram normalizadas;
+- distribuicao da variavel alvo serious no treino e no teste;
+- parametros do StandardScaler: medias e desvios aprendidos no treino;
+- informacoes da imputacao KNN: metodo, atributos usados, quantidade de registros imputados no treino e no teste.
+
+Como mostrar isso para a professora:
+
+- abrir o notebook 03_visualizacao_outputs_entrega2.ipynb;
+- executar as secoes "Metadata: Parametros Salvos" e "Metadata: Imputacao KNN e Split";
+- essas tabelas mostram os parametros de normalizacao e a evidencia de que o KNN foi treinado apenas no treino.
+
+Texto sugerido:
+
+"Para garantir reprodutibilidade, os parametros das transformacoes foram salvos em data_preparation_metadata.json. Esse arquivo registra as medias e desvios padrao aprendidos no treinamento durante a normalizacao, alem das informacoes sobre a imputacao KNN e a distribuicao das classes nos conjuntos de treino e teste."
+
+
+8. Outputs que devem ser mostrados
+----------------------------------
+Mostrar estes arquivos:
+
+1) outputs/drug_events_cleaned.csv
+   - representa a base limpa antes da nova etapa de transformacao;
+   - 32.309 registros;
+   - 12 colunas.
+
+2) outputs/drug_events_train_transformed.csv
+   - conjunto de treinamento transformado;
+   - 22.616 registros;
+   - 17 colunas.
+
+3) outputs/drug_events_test_transformed.csv
+   - conjunto de teste transformado;
+   - 9.693 registros;
+   - 17 colunas.
+
+4) outputs/drug_events_sample.csv
+   - amostra visual recomendada para a professora;
+   - 50 registros;
+   - 25 registros do treino e 25 do teste;
+   - possui coluna split indicando train/test.
+
+5) outputs/data_preparation_metadata.json
+   - parametros e informacoes de auditoria.
+
+
+9. Notebook novo para mostrar antes e depois
+--------------------------------------------
+Foi criado o notebook:
+
+notebooks/03_visualizacao_outputs_entrega2.ipynb
+
+Ele mostra:
+
+- head(20) do dataset antes das novas transformacoes;
+- head(20) do treino transformado;
+- head(20) do teste transformado;
+- head(50) da amostra final;
+- comparacao de colunas antes/depois;
+- parametros de normalizacao salvos no metadata;
+- informacoes da imputacao KNN;
+- distribuicao da variavel alvo serious;
+- conferencia da normalizacao.
+
+
+10. Frase curta para colocar na conclusao
+-----------------------------------------
+"Com a revisao, o pipeline passou a respeitar a separacao entre treinamento e teste antes das transformacoes que aprendem parametros. A regra original de criacao da faixa etaria foi mantida, mas a imputacao KNN foi refeita apenas a partir do conjunto de treinamento. A normalizacao tambem foi ajustada somente no treino, com parametros salvos e aplicados ao teste. Assim, a nova versao reduz o risco de vazamento de dados e deixa os datasets prontos para a etapa de modelagem."
