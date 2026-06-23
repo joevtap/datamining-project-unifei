@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrega 3 — Execução do Experimento (DoE de Árvores + Validação)</title>
+
+    <!-- joevtap-style: Merriweather (serif) + Geist (sans) + JetBrains Mono (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           THEME TOKENS — joevtap-style (dark)
+           =========================================== */
+        :root {
+            --ink: #0c0c0e;
+            --ink-surface: #131316;
+            --ink-deep: #080809;
+            --code-bg: #0a0c10;
+            --text: #e8e8ea;
+            --muted: #a9aab0;
+            --faint: #7c7d85;
+            --rule: #2e2f35;
+            --accent: #6ee7b7;
+            --accent-deep: #064e3b;
+            --accent-hover: #a7f3d0;
+
+            --font-serif: 'Merriweather', ui-serif, Georgia, serif;
+            --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+            --pad-x: 120px;
+            --pad-y: 96px;
+            --gap-lg: 48px;
+            --gap-md: 28px;
+            --gap-sm: 14px;
+
+            --stage-bg: #000;
+            --slide-bg: #0c0c0e;
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-normal: 0.6s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ===========================================
+           FIXED 16:9 STAGE — viewport-base.css (full)
+           =========================================== */
+        html, body {
+            width: 100%; height: 100%; margin: 0;
+            overflow: hidden; background: var(--stage-bg, #000);
+        }
+        .deck-viewport {
+            position: fixed; inset: 0; overflow: hidden;
+            background: var(--stage-bg, #000);
+        }
+        .deck-stage {
+            position: absolute; left: 0; top: 0;
+            width: 1920px; height: 1080px; overflow: hidden;
+            transform-origin: 0 0; background: var(--slide-bg, #fff);
+        }
+        .slide {
+            position: absolute; inset: 0;
+            width: 1920px; height: 1080px; overflow: hidden;
+            display: block; visibility: hidden; opacity: 0; pointer-events: none;
+            background: var(--slide-bg, #fff);
+        }
+        .slide.active, .slide.visible {
+            visibility: visible; opacity: 1; pointer-events: auto; z-index: 1;
+        }
+        img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+        .deck-controls {
+            position: fixed; left: 50%; bottom: 22px;
+            transform: translateX(-50%); z-index: 1000;
+        }
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            .slide {
+                position: relative; display: block !important; visibility: visible !important;
+                opacity: 1 !important; pointer-events: auto !important;
+                width: 1920px; height: 1080px; break-after: page; page-break-after: always;
+            }
+            .slide:last-child { break-after: auto; page-break-after: auto; }
+            .deck-controls { display: none !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important; transition-duration: 0.2s !important;
+            }
+        }
+
+        /* ===========================================
+           ATMOSPHERE + TYPOGRAPHY
+           =========================================== */
+        .slide { background: var(--ink); }
+
+        .kicker {
+            font-family: var(--font-mono); font-size: 15px; font-weight: 600;
+            letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); line-height: 1.4;
+        }
+        .label {
+            font-family: var(--font-mono); font-size: 14px; font-weight: 500;
+            letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); line-height: 1.4;
+        }
+        .h1 { font-family: var(--font-serif); font-size: 80px; font-weight: 400; line-height: 1.06; letter-spacing: -0.02em; color: var(--text); }
+        .h2 { font-family: var(--font-serif); font-size: 52px; font-weight: 400; line-height: 1.1; color: var(--text); }
+        .h3 { font-family: var(--font-serif); font-size: 30px; font-weight: 400; line-height: 1.2; color: var(--text); }
+        .lead { font-family: var(--font-sans); font-size: 27px; font-weight: 400; line-height: 1.55; color: var(--muted); }
+        .body { font-family: var(--font-sans); font-size: 21px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+        .counter {
+            font-family: var(--font-mono); font-size: 14px; font-weight: 500;
+            letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint);
+            position: absolute; right: var(--pad-x); bottom: 56px;
+        }
+
+        .mint { color: var(--accent); }
+        .em-text { color: var(--text); }
+
+        /* ===========================================
+           SLIDE LAYOUT — content (kicker → title → body)
+           =========================================== */
+        .slide-content {
+            display: flex; flex-direction: column; justify-content: center;
+            height: 100%; padding: var(--pad-y) var(--pad-x);
+        }
+        .slide-content .kicker { margin-bottom: var(--gap-sm); }
+        .slide-content .h2 { margin-bottom: var(--gap-md); max-width: 1500px; }
+        .head-stack { margin-bottom: var(--gap-lg); }
+
+        .counter-wrap { position: absolute; right: var(--pad-x); bottom: 56px; }
+        .deck-label { position: absolute; left: var(--pad-x); bottom: 56px; }
+
+        /* ===========================================
+           METRICS TABLE
+           =========================================== */
+        table.tbl {
+            width: 100%; border-collapse: collapse; font-family: var(--font-sans);
+        }
+        table.tbl thead th {
+            font-family: var(--font-mono); font-size: 14px; font-weight: 600;
+            letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);
+            text-align: right; padding: 0 0 18px 0; border-bottom: 1px solid var(--rule);
+        }
+        table.tbl thead th.lft { text-align: left; }
+        table.tbl tbody td {
+            font-size: 23px; color: var(--text); text-align: right;
+            padding: 20px 0; border-bottom: 1px solid var(--rule);
+            font-variant-numeric: tabular-nums;
+        }
+        table.tbl tbody td.lft { text-align: left; color: var(--muted); }
+        table.tbl tbody td .expid { font-family: var(--font-mono); font-size: 18px; color: var(--text); letter-spacing: 0.04em; }
+        table.tbl tbody td .model { font-family: var(--font-sans); font-size: 17px; color: var(--faint); display: block; margin-top: 2px; }
+        table.tbl tbody tr:last-child td { border-bottom: none; }
+        td.best { color: var(--accent); font-weight: 500; }
+        .col-sep { padding-left: 40px !important; }
+
+        /* hyperparameters mono strip */
+        .hp {
+            margin-top: var(--gap-md); display: flex; gap: 56px; flex-wrap: wrap;
+            font-family: var(--font-mono); font-size: 16px; color: var(--muted);
+            border-top: 1px solid var(--rule); padding-top: var(--gap-md);
+        }
+        .hp .hp-k { color: var(--accent); margin-right: 10px; }
+        .note { margin-top: 22px; font-family: var(--font-mono); font-size: 14px; color: var(--faint); letter-spacing: 0.04em; }
+
+        /* ===========================================
+           PLANNED / EXECUTION GRIDS
+           =========================================== */
+        .doe-table thead th, .doe-table tbody td { font-size: 24px; }
+        tr.dim td { color: var(--faint); }
+        tr.dim td .expid { color: var(--faint); }
+
+        .two-col { display: flex; gap: 80px; align-items: flex-start; }
+        .two-col > .col { flex: 1; min-width: 0; }
+        .col-head { margin-bottom: var(--gap-md); }
+        .pill-list { display: flex; flex-direction: column; gap: 16px; }
+        .pill {
+            font-family: var(--font-mono); font-size: 19px; color: var(--text);
+            display: flex; align-items: baseline; gap: 16px;
+        }
+        .pill .pid { color: var(--accent); min-width: 86px; }
+        .pill.off .pid { color: var(--faint); }
+        .pill.off { color: var(--faint); }
+
+        /* ===========================================
+           IMAGES (notebook plots — light on dark = framed)
+           =========================================== */
+        .plot-row { display: flex; gap: var(--gap-lg); align-items: stretch; }
+        .plot-card { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+        .plot-card img {
+            width: 100%; height: auto; max-height: 600px; object-fit: contain;
+            background: #ffffff; border: 1px solid var(--rule); border-radius: 0; padding: 10px;
+        }
+        .plot-cap { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+
+        .two-col-vis { display: flex; gap: 64px; align-items: center; height: 100%; }
+        .two-col-vis .col-img { flex: 1.15; min-width: 0; display: flex; justify-content: center; }
+        .two-col-vis .col-img img {
+            width: 100%; height: auto; max-height: 720px; object-fit: contain;
+            background: #ffffff; border: 1px solid var(--rule); padding: 10px;
+        }
+        .two-col-vis .col-side { flex: 0.85; min-width: 0; }
+
+        /* conclusions list */
+        .concl { display: flex; flex-direction: column; gap: 26px; max-width: 1560px; }
+        .concl .item { display: flex; gap: 22px; align-items: baseline; }
+        .concl .item .mk { font-family: var(--font-mono); font-size: 16px; color: var(--accent); min-width: 30px; }
+        .concl .item .tx { font-family: var(--font-sans); font-size: 24px; line-height: 1.5; color: var(--text); }
+        .concl .item .tx b { font-weight: 600; color: var(--text); }
+        .concl .item .tx .q { color: var(--accent); font-family: var(--font-mono); font-size: 21px; }
+
+        /* delta table (compact) */
+        table.delta td, table.delta th { font-size: 20px; }
+        .neg { color: var(--muted); font-family: var(--font-mono); font-size: 19px; }
+
+        /* ===========================================
+           STAGGERED REVEAL
+           =========================================== */
+        .reveal {
+            opacity: 0; transform: translateY(28px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+        .slide.active .reveal { opacity: 1; transform: translateY(0); }
+        .reveal:nth-child(1) { transition-delay: 0.08s; }
+        .reveal:nth-child(2) { transition-delay: 0.16s; }
+        .reveal:nth-child(3) { transition-delay: 0.24s; }
+        .reveal:nth-child(4) { transition-delay: 0.32s; }
+        .reveal:nth-child(5) { transition-delay: 0.40s; }
+        .reveal:nth-child(6) { transition-delay: 0.48s; }
+
+    </style>
+</head>
+<body>
+    <div class="deck-viewport">
+        <div class="deck-stage" id="deckStage">
+
+            <!-- ===== SLIDE 1 — DoE PLANEJADO ===== -->
+            <section class="slide slide-content active">
+                <div class="head-stack">
+                    <p class="kicker reveal">Entrega 3 · Design de Experimentos</p>
+                    <h2 class="h2 reveal">O que o DoE previa</h2>
+                </div>
+                <table class="tbl doe-table reveal">
+                    <thead>
+                        <tr>
+                            <th class="lft">Exp.</th>
+                            <th class="lft">Conjunto de atributos</th>
+                            <th class="lft">Modelo</th>
+                            <th class="lft">Busca de hiperparâmetros</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="dim"><td class="lft"><span class="expid">EXP-01</span></td><td class="lft">Baseline (11)</td><td class="lft">Regressão Logística</td><td class="lft">GridSearchCV</td></tr>
+                        <tr><td class="lft"><span class="expid">EXP-02</span></td><td class="lft">Baseline (11)</td><td class="lft">Random Forest</td><td class="lft">RandomizedSearchCV</td></tr>
+                        <tr><td class="lft"><span class="expid">EXP-03</span></td><td class="lft">Baseline (11)</td><td class="lft">Gradient Boosting</td><td class="lft">RandomizedSearchCV</td></tr>
+                        <tr class="dim"><td class="lft"><span class="expid">EXP-04</span></td><td class="lft">Completo (17)</td><td class="lft">Regressão Logística</td><td class="lft">GridSearchCV</td></tr>
+                        <tr><td class="lft"><span class="expid">EXP-05</span></td><td class="lft">Completo (17)</td><td class="lft">Random Forest</td><td class="lft">RandomizedSearchCV</td></tr>
+                        <tr><td class="lft"><span class="expid">EXP-06</span></td><td class="lft">Completo (17)</td><td class="lft">Gradient Boosting</td><td class="lft">RandomizedSearchCV</td></tr>
+                    </tbody>
+                </table>
+                <p class="note reveal">Seleção por f1_macro · StratifiedKFold · refit = f1_macro · random_state = 42 · alvo serious (classificação binária)</p>
+                <p class="counter">01 / 07</p>
+            </section>
+
+            <!-- ===== SLIDE 2 — EXECUÇÃO REAL ===== -->
+            <section class="slide slide-content">
+                <div class="head-stack">
+                    <p class="kicker reveal">Execução</p>
+                    <h2 class="h2 reveal">O que rodou, sob limitação de hardware</h2>
+                </div>
+                <div class="two-col reveal">
+                    <div class="col">
+                        <p class="label col-head">Executados — modelos de árvore</p>
+                        <div class="pill-list">
+                            <div class="pill"><span class="pid">EXP-02</span><span>Random Forest · Baseline</span></div>
+                            <div class="pill"><span class="pid">EXP-03</span><span>Gradient Boosting · Baseline</span></div>
+                            <div class="pill"><span class="pid">EXP-05</span><span>Random Forest · Completo</span></div>
+                            <div class="pill"><span class="pid">EXP-06</span><span>Gradient Boosting · Completo</span></div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <p class="label col-head">Adiados</p>
+                        <div class="pill-list">
+                            <div class="pill off"><span class="pid">EXP-01</span><span>Regressão Logística · Baseline</span></div>
+                            <div class="pill off"><span class="pid">EXP-04</span><span>Regressão Logística · Completo</span></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="body reveal" style="margin-top:48px; max-width:1500px;">
+                    <span class="em-text">MODO_RAPIDO = True</span> (máquina sem capacidade para o modo completo): grades de
+                    hiperparâmetros <span class="em-text">reduzidas</span> e <span class="em-text">cv = 3</span>. Os hiperparâmetros saem de um
+                    espaço de busca reduzido — <span class="em-text">não</span> são a Tabela 1 oficial do PDF.
+                </p>
+                <p class="counter">02 / 07</p>
+            </section>
+
+            <!-- ===== SLIDE 3 — RESULTADOS NO TESTE ===== -->
+            <section class="slide slide-content">
+                <div class="head-stack">
+                    <p class="kicker reveal">Resultados · Conjunto de teste (30%)</p>
+                    <h2 class="h2 reveal">Métricas por modelo</h2>
+                </div>
+                <table class="tbl reveal">
+                    <thead>
+                        <tr>
+                            <th class="lft">Experimento</th>
+                            <th>Acur.</th>
+                            <th>Bal. acc.</th>
+                            <th class="col-sep">Prec. (1)</th>
+                            <th>Rec. (1)</th>
+                            <th>F1 (1)</th>
+                            <th class="col-sep">F1-macro</th>
+                            <th>ROC AUC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-02</span><span class="model">Random Forest · Baseline</span></td>
+                            <td>0,821</td><td>0,832</td><td class="col-sep">0,914</td><td>0,787</td><td>0,846</td><td class="col-sep">0,817</td><td>0,904</td>
+                        </tr>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-03</span><span class="model">Gradient Boosting · Baseline</span></td>
+                            <td>0,814</td><td>0,812</td><td class="col-sep">0,873</td><td>0,821</td><td>0,846</td><td class="col-sep">0,806</td><td>0,899</td>
+                        </tr>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-05</span><span class="model">Random Forest · Completo</span></td>
+                            <td>0,830</td><td class="best">0,843</td><td class="col-sep">0,925</td><td>0,792</td><td>0,853</td><td class="col-sep best">0,826</td><td class="best">0,909</td>
+                        </tr>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-06</span><span class="model">Gradient Boosting · Completo</span></td>
+                            <td>0,825</td><td>0,826</td><td class="col-sep">0,889</td><td>0,822</td><td>0,854</td><td class="col-sep">0,818</td><td>0,903</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="hp reveal">
+                    <span><span class="hp-k">Random Forest</span>n_estimators=200 · max_depth=None · min_samples_split=5 · min_samples_leaf=2 · class_weight=balanced</span>
+                    <span><span class="hp-k">Gradient Boosting</span>n_estimators=100 · max_depth=3 · learning_rate=0.2</span>
+                </div>
+                <p class="counter">03 / 07</p>
+            </section>
+
+            <!-- ===== SLIDE 4 — VISUALIZAÇÃO (TESTE) ===== -->
+            <section class="slide slide-content">
+                <div class="head-stack">
+                    <p class="kicker reveal">Visualização · Teste</p>
+                    <h2 class="h2 reveal">Engenharia de atributos e acertos por classe</h2>
+                </div>
+                <div class="plot-row reveal">
+                    <div class="plot-card">
+                        <img src="img/baseline_vs_completo.png" alt="Comparação Baseline x Completo em F1-macro e ROC AUC no teste">
+                        <p class="plot-cap">Baseline × Completo — F1-macro e ROC AUC (teste)</p>
+                    </div>
+                    <div class="plot-card">
+                        <img src="img/cm_teste.png" alt="Matrizes de confusão dos quatro experimentos no teste">
+                        <p class="plot-cap">Matrizes de confusão — teste (1 = grave, 2 = não-grave)</p>
+                    </div>
+                </div>
+                <p class="counter">04 / 07</p>
+            </section>
+
+            <!-- ===== SLIDE 5 — VALIDAÇÃO (DADOS NUNCA VISTOS) ===== -->
+            <section class="slide slide-content">
+                <div class="head-stack">
+                    <p class="kicker reveal">Validação · Dados nunca vistos</p>
+                    <h2 class="h2 reveal">Mesmas métricas, mesmos hiperparâmetros</h2>
+                </div>
+                <table class="tbl reveal">
+                    <thead>
+                        <tr>
+                            <th class="lft">Experimento</th>
+                            <th>Acur.</th>
+                            <th>Bal. acc.</th>
+                            <th class="col-sep">Prec. (1)</th>
+                            <th>Rec. (1)</th>
+                            <th>F1 (1)</th>
+                            <th class="col-sep">F1-macro</th>
+                            <th>ROC AUC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-02</span><span class="model">Random Forest · Baseline</span></td>
+                            <td>0,778</td><td>0,791</td><td class="col-sep">0,900</td><td>0,677</td><td>0,773</td><td class="col-sep">0,778</td><td>0,863</td>
+                        </tr>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-03</span><span class="model">Gradient Boosting · Baseline</span></td>
+                            <td>0,779</td><td>0,787</td><td class="col-sep">0,862</td><td>0,719</td><td>0,784</td><td class="col-sep">0,779</td><td>0,856</td>
+                        </tr>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-05</span><span class="model">Random Forest · Completo</span></td>
+                            <td class="best">0,783</td><td class="best">0,797</td><td class="col-sep">0,912</td><td>0,677</td><td>0,777</td><td class="col-sep best">0,783</td><td class="best">0,868</td>
+                        </tr>
+                        <tr>
+                            <td class="lft"><span class="expid">EXP-06</span><span class="model">Gradient Boosting · Completo</span></td>
+                            <td>0,782</td><td>0,792</td><td class="col-sep">0,880</td><td>0,706</td><td>0,783</td><td class="col-sep">0,782</td><td>0,864</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="hp reveal">
+                    <span><span class="hp-k">Random Forest</span>n_estimators=200 · max_depth=None · min_samples_split=5 · min_samples_leaf=2 · class_weight=balanced</span>
+                    <span><span class="hp-k">Gradient Boosting</span>n_estimators=100 · max_depth=3 · learning_rate=0.2</span>
+                </div>
+                <p class="note reveal">21.899 registros de validação · distribuição serious 55,8% / 44,2% (treino: 62,3% / 37,7%) · pipeline reaplicado sem vazamento</p>
+                <p class="counter">05 / 07</p>
+            </section>
+
+            <!-- ===== SLIDE 6 — TESTE × VALIDAÇÃO ===== -->
+            <section class="slide">
+                <div class="two-col-vis" style="padding: var(--pad-y) var(--pad-x);">
+                    <div class="col-img reveal">
+                        <img src="img/cm_validacao.png" alt="Matrizes de confusão dos quatro modelos na validação">
+                    </div>
+                    <div class="col-side">
+                        <p class="kicker reveal" style="margin-bottom:14px;">Teste → Validação</p>
+                        <h3 class="h3 reveal" style="margin-bottom:36px;">Quanto cai em dados nunca vistos</h3>
+                        <table class="tbl delta reveal">
+                            <thead>
+                                <tr>
+                                    <th class="lft">Exp.</th>
+                                    <th>F1-macro</th>
+                                    <th>Δ</th>
+                                    <th class="col-sep">ROC AUC</th>
+                                    <th>Δ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="lft"><span class="expid">EXP-02</span></td><td>0,82→0,78</td><td class="neg">−0,039</td><td class="col-sep">0,90→0,86</td><td class="neg">−0,041</td></tr>
+                                <tr><td class="lft"><span class="expid">EXP-03</span></td><td>0,81→0,78</td><td class="neg">−0,027</td><td class="col-sep">0,90→0,86</td><td class="neg">−0,043</td></tr>
+                                <tr><td class="lft"><span class="expid">EXP-05</span></td><td>0,83→0,78</td><td class="neg">−0,043</td><td class="col-sep">0,91→0,87</td><td class="neg">−0,041</td></tr>
+                                <tr><td class="lft"><span class="expid">EXP-06</span></td><td>0,82→0,78</td><td class="neg">−0,036</td><td class="col-sep">0,90→0,86</td><td class="neg">−0,039</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="note reveal">Quedas pequenas e uniformes (~0,03–0,04) → boa generalização.</p>
+                    </div>
+                </div>
+                <p class="counter">06 / 07</p>
+            </section>
+
+            <!-- ===== SLIDE 7 — CONCLUSÕES ===== -->
+            <section class="slide slide-content">
+                <div class="head-stack">
+                    <p class="kicker reveal">Conclusões · ancoradas nos resultados</p>
+                    <h2 class="h2 reveal">O que os números mostram</h2>
+                </div>
+                <div class="concl">
+                    <div class="item reveal"><span class="mk">01</span><span class="tx"><b>Engenharia de atributos agrega ganho consistente:</b> o conjunto <b>Completo</b> supera o <b>Baseline</b> nos dois modelos, em teste e validação (F1-macro e ROC AUC).</span></div>
+                    <div class="item reveal"><span class="mk">02</span><span class="tx"><b>Melhor experimento: EXP-05</b> (Random Forest · Completo) — F1-macro <span class="q">0,826</span> e ROC AUC <span class="q">0,909</span> no teste.</span></div>
+                    <div class="item reveal"><span class="mk">03</span><span class="tx"><b>Random Forest sobreajusta mais</b> que o Gradient Boosting: gap treino–teste de F1-macro ~<span class="q">0,05</span> (RF) contra ~<span class="q">0,015</span> (GB).</span></div>
+                    <div class="item reveal"><span class="mk">04</span><span class="tx"><b>Boa generalização:</b> em dados nunca vistos as quedas são pequenas e uniformes (~0,03–0,04 em F1-macro e ROC AUC) e o ranking entre modelos se mantém.</span></div>
+                    <div class="item reveal"><span class="mk">05</span><span class="tx"><b>Robustez:</b> a validação tem distribuição de classes diferente (55,8/44,2 vs 62,3/37,7) e ainda assim as métricas permanecem estáveis.</span></div>
+                </div>
+                <p class="counter">07 / 07</p>
+            </section>
+
+        </div>
+    </div>
+
+    <script>
+        /* ===========================================
+           SLIDE PRESENTATION CONTROLLER (fixed 16:9 stage)
+           =========================================== */
+        class SlidePresentation {
+            constructor() {
+                this.slides = Array.from(document.querySelectorAll('.slide'));
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.totalSlides = this.slides.length;
+                this.setupStageScale();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupWheelNav();
+                this.initFirstSlide();
+            }
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') {
+                        e.preventDefault(); this.next();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+                        e.preventDefault(); this.prev();
+                    } else if (e.key === 'Home') { e.preventDefault(); this.showSlide(0); }
+                    else if (e.key === 'End') { e.preventDefault(); this.showSlide(this.totalSlides - 1); }
+                });
+            }
+            setupTouchNav() {
+                let startX = 0, startY = 0;
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+                }, { passive: true });
+                document.addEventListener('touchend', (e) => {
+                    const dx = e.changedTouches[0].clientX - startX;
+                    const dy = e.changedTouches[0].clientY - startY;
+                    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                        if (dx < 0) this.next(); else this.prev();
+                    }
+                }, { passive: true });
+            }
+            setupWheelNav() {
+                // Roda do mouse: um slide por gesto (trava breve evita pular vários).
+                let lock = false;
+                window.addEventListener('wheel', (e) => {
+                    if (Math.abs(e.deltaY) < 10 || lock) return;
+                    lock = true;
+                    setTimeout(() => { lock = false; }, 600);
+                    if (e.deltaY > 0) this.next(); else this.prev();
+                }, { passive: true });
+            }
+            initFirstSlide() {
+                this.slides.forEach((slide, i) => slide.classList.toggle('active', i === 0));
+            }
+            showSlide(index) {
+                const newIndex = Math.max(0, Math.min(index, this.totalSlides - 1));
+                if (newIndex === this.currentSlide) return;
+                const current = this.slides[this.currentSlide];
+                const next = this.slides[newIndex];
+                if (current) current.classList.remove('active');
+                if (next) next.classList.add('active');
+                this.currentSlide = newIndex;
+            }
+            next() { if (this.currentSlide < this.totalSlides - 1) this.showSlide(this.currentSlide + 1); }
+            prev() { if (this.currentSlide > 0) this.showSlide(this.currentSlide - 1); }
+        }
+        window.presentation = new SlidePresentation();
+    </script>
+</body>
+</html>
