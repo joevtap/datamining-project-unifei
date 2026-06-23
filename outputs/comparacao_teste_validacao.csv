@@ -1,0 +1,5 @@
+exp_id,modelo,conjunto,teste_f1_macro,validacao_f1_macro,delta_f1_macro,teste_roc_auc,validacao_roc_auc,delta_roc_auc
+EXP-02,Random Forest,Baseline (11),0.8165,0.7776,-0.0389,0.9038,0.8627,-0.0411
+EXP-03,Gradient Boosting,Baseline (11),0.8057,0.7788,-0.0269,0.8989,0.8562,-0.0427
+EXP-05,Random Forest,Completo (17),0.8259,0.7833,-0.0426,0.9089,0.8677,-0.0412
+EXP-06,Gradient Boosting,Completo (17),0.818,0.7819,-0.0361,0.9034,0.8644,-0.039

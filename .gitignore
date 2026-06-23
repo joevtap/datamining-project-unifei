@@ -9,5 +9,9 @@ wheels/
 class_lessons/
 datasets/
 
+# Dados de validação (grandes, ~1.2GB) e modelos treinados (regeneráveis pelo nb05)
+validation/
+outputs/models/
+
 # Virtual environments
 .venv
