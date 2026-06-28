@@ -1,189 +1,89 @@
-# Roteiro do apresentador — Entrega 3 (Execução do DoE de árvores + Validação)
+# Roteiro do apresentador — Trabalho final (CRISP-DM · Eventos adversos a medicamentos)
 
-Guia de apoio para a apresentação `apresentacao_entrega3.html` (7 slides, sem capa).
-Para cada slide: **Falar** (o que dizer) e **Como interpretar** (como ler o que está na
-tela). Navegação: setas/espaço para avançar; o contador no canto inferior direito
-(`01 / 07`) indica a posição.
-
-> **Contexto em uma frase (abertura, opcional):** "Esta etapa executa o Design de
-> Experimentos da Entrega 3 sobre os dados já preparados — foco nos modelos de árvore —
-> e valida os modelos em dados que eles nunca viram."
+Apresentação: `apresentacao_entrega3.html` (11 slides, 16:9). Navegação: setas / espaço /
+swipe. Tempo-alvo total: ~10–12 min. Os números vêm do **run completo**
+(`MODO_RAPIDO=False`) e estão em `outputs/` — os mesmos exibidos nos slides.
 
 **Lembretes de vocabulário (valem para o deck todo):**
 - **Alvo `serious`** (classificação binária): `serious = 1` → evento **grave** (classe
   positiva, ~62% do treino); `serious = 2` → **não-grave**.
-- **F1-macro**: média do F1 entre as duas classes — é a **métrica de seleção** porque
-  trata as classes de forma justa sob o desbalanceamento moderado.
-- **ROC AUC**: usa a **probabilidade contínua** prevista; mede a separação entre classes
-  independpente do limiar.
-- **Conjunto Baseline (11)**: atributos originais. **Completo (17)**: Baseline + 5
-  features de engenharia + flag de imputação.
+- **F1-macro**: média do F1 entre as duas classes — é a **métrica de seleção** por ser
+  justa sob desbalanceamento. **ROC AUC** usa a probabilidade (`predict_proba`).
 
 ---
 
-## Slide 1 — "O que o DoE previa"
+## Slide 1 — Capa (~30s)
+- Apresentar o tema: prever a **gravidade** (`serious`) de relatórios de eventos adversos
+  a medicamentos do FDA (OpenFDA / FAERS).
+- Frase-âncora: "um pipeline consolidado, com carregamento preguiçoso, balanceamento por
+  SMOTE e um Design de Experimentos de 6 configurações, validado em dados nunca vistos".
 
-**Falar:**
-- "O experimento planejado cruzava **2 conjuntos de atributos** (Baseline e Completo) com
-  **3 modelos** (Regressão Logística, Random Forest, Gradient Boosting), dando **6
-  experimentos**, EXP-01 a EXP-06."
-- "A seleção de hiperparâmetros usa **f1_macro** como critério, com validação cruzada
-  estratificada e `random_state=42` para reprodutibilidade."
+## Slide 2 — O problema e os dados (~1min)
+- Cada registro = um relatório com paciente + lista de medicamentos.
+- Alvo `serious`: **1 = grave**, **2 = não-grave**; **desbalanceado** (~62/38 no treino).
+- ~36 mil relatórios; conjunto Completo tem 17 atributos (originais + 5 de engenharia).
+- Gancho: "o desbalanceamento motiva o SMOTE; o volume motiva o carregamento preguiçoso".
 
-**Como interpretar:**
-- A tabela é o **plano completo**. As duas linhas em cinza (EXP-01 e EXP-04, Regressão
-  Logística) já antecipam visualmente o que **ainda não foi executado** — isso conecta
-  com o próximo slide.
-- Random Forest e Gradient Boosting usam **RandomizedSearchCV**; a Logística usaria
-  **GridSearchCV**.
+## Slide 3 — Pipeline CRISP-DM (~1min)
+- Percorrer o fluxo: ingestão streaming → transformação lazy → imputação KNN da faixa
+  etária → split 70/30 → SMOTE (só no treino) → DoE → validação.
+- **Mensagem-chave:** tudo que aprende (KNN, SMOTE, scaler, TF-IDF, modelos) é ajustado
+  **só no treino** → **zero vazamento**.
 
----
+## Slide 4 — Método: carregamento preguiçoso (Polars) (~1min30)
+- `ijson` lê registro a registro (memória O(1)); a transformação é **uma única query**
+  Polars, materializada uma vez em streaming.
+- Benefício: escala para datasets grandes (~2,8 GB) sem materializar etapas intermediárias.
+- A modelagem é um pipeline sklearn/imblearn que **só executa no `.fit()`**.
 
-## Slide 2 — "O que rodou, sob limitação de hardware"
+## Slide 5 — Método: SMOTE (~1min30)
+- Por que SMOTE e não `class_weight`: sintetiza exemplos da minoria (via KNN) em vez de só
+  reponderar a perda.
+- Posição no pipeline: `ColumnTransformer → SMOTE → modelo`; com `imblearn.Pipeline` atua
+  **só nos folds de treino** (sem vazamento).
+- `sampling_strategy="auto"` → dataset-agnóstico. Resultado: treino vai de 14.089/8.527
+  para 14.089/14.089.
 
-**Falar:**
-- "Nesta execução rodamos os **4 experimentos de árvore** — EXP-02, 03, 05 e 06."
-- "A **Regressão Logística (EXP-01 e EXP-04) ficou adiada** para uma etapa posterior."
-- "Importante ser transparente: rodamos em **MODO_RAPIDO** — grades de hiperparâmetros
-  reduzidas e validação cruzada com 3 folds — por limitação de hardware. Então os
-  hiperparâmetros escolhidos vêm de um **espaço de busca reduzido**, não da tabela
-  completa do enunciado."
+## Slide 6 — DoE: 6 experimentos (~1min)
+- 3 modelos (Regressão Logística, Random Forest, Gradient Boosting) × 2 conjuntos
+  (Baseline 11, Completo 17) = EXP-01 a EXP-06.
+- LR por `GridSearchCV`; árvores por `RandomizedSearchCV`. Seleção por **f1_macro**,
+  `StratifiedKFold` cv=5, `random_state=42`.
 
-**Como interpretar:**
-- Coluna esquerda (mint) = **feito**; coluna direita (cinza) = **adiado**.
-- A ressalva do MODO_RAPIDO é uma **nota de honestidade metodológica**: os números são
-  válidos e comparáveis entre si, mas são de demonstração — não os "oficiais" da Tabela 1.
+## Slide 7 — Resultados no teste (~1min30)
+- Ler a linha vencedora: **EXP-05 (RF · Completo)** — F1-macro **0,825**, ROC AUC **0,909**.
+- EXP-06 (GB · Completo) praticamente empatado.
+- Notar que a precisão da classe 1 é alta (~0,92) e o recall é o ponto mais fraco — efeito
+  do desbalanceamento mesmo após SMOTE.
 
----
+## Slide 8 — Visualização no teste (~1min)
+- Gráfico esquerdo: **Completo > Baseline** nos três modelos (F1-macro e ROC AUC).
+- Matrizes de confusão: a diagonal domina; os erros se concentram em prever "2" quando é
+  "1" (falsos não-graves) — relevante no domínio clínico.
 
-## Slide 3 — "Métricas por modelo" (teste)
+## Slide 9 — Validação em dados nunca vistos (~1min)
+- Mesmas métricas e hiperparâmetros, aplicados a 21.899 registros de **outros** arquivos.
+- Distribuição diferente (55,8/44,2) e ainda assim métricas estáveis (~0,78 F1-macro).
+- Reforçar: pipeline reaplicado **sem vazamento** (parâmetros do treino).
 
-**Falar:**
-- "Estas são as métricas no **conjunto de teste** (os 30% separados, estratificados)."
-- "Lendo pela métrica de seleção, **F1-macro**: o melhor é o **EXP-05 — Random Forest
-  com o conjunto Completo, 0,826**, também com a maior **ROC AUC, 0,909** (em destaque)."
-- "Em ambos os modelos, o **conjunto Completo supera o Baseline** — ou seja, a engenharia
-  de atributos ajudou."
-- "Os hiperparâmetros selecionados estão na faixa inferior: o Random Forest convergiu
-  para 200 árvores, profundidade livre e `class_weight=balanced`; o Gradient Boosting
-  para 100 estimadores, profundidade 3 e learning rate 0,2."
+## Slide 10 — Teste × validação (~1min)
+- Quedas **pequenas e uniformes** (~0,03–0,04) em F1-macro e ROC AUC → boa generalização.
+- O **ranking** entre modelos se mantém do teste para a validação.
 
-**Como interpretar:**
-- `Prec. (1)` / `Rec. (1)` / `F1 (1)` são da **classe positiva (grave)**. Note o padrão
-  do Random Forest: **precisão alta (~0,91–0,92) e recall menor (~0,79)** — ele é
-  conservador ao marcar "grave", erra pouco quando marca, mas deixa passar mais casos.
-- O Gradient Boosting tem **recall um pouco maior** da classe grave (~0,82) — equilíbrio
-  ligeiramente diferente.
-- `Bal. acc.` (acurácia balanceada) confirma que o desempenho não está inflado pela
-  classe majoritária.
-
----
-
-## Slide 4 — Visualização (teste)
-
-**Falar:**
-- "À esquerda, **Baseline × Completo** nas duas métricas-chave: as barras do Completo
-  ficam **consistentemente acima** — é a evidência visual do ganho da engenharia de
-  atributos."
-- "À direita, as **matrizes de confusão** dos quatro modelos no teste: a diagonal
-  concentra os acertos."
-
-**Como interpretar:**
-- Nas barras, o ganho do Completo é **pequeno mas consistente** — não é um salto, é uma
-  melhora estável nos dois modelos.
-- Nas matrizes, os eixos estão rotulados como **1 (grave)** e **2 (não-grave)**,
-  consistentes com a validação (slide 6). Linhas = classe real, colunas = classe
-  prevista; a **diagonal** concentra os acertos e o que está fora dela são os erros.
+## Slide 11 — Conclusões (~1min)
+1. Engenharia de atributos agrega ganho consistente (Completo > Baseline nos 3 modelos).
+2. Melhor: EXP-05 (RF · Completo); EXP-06 (GB) empatado.
+3. Regressão Logística é competitiva e a mais barata, e **generaliza melhor** (gap
+   treino–teste ~0,006 vs ~0,05–0,06 das árvores).
+4. Boa generalização em dados nunca vistos; ranking preservado.
+5. Robustez mesmo com distribuição de classes diferente na validação.
 
 ---
 
-## Slide 5 — "Mesmas métricas, mesmos hiperparâmetros" (validação)
-
-**Falar:**
-- "Agora o teste de fogo: aplicamos os **mesmos modelos já treinados** a um conjunto de
-  **dados nunca vistos** — outros arquivos JSON no mesmo formato."
-- "Reaplicamos exatamente o mesmo pipeline (imputação, scaler) com **parâmetros do
-  treino, sem nenhum reajuste** — portanto **sem vazamento**. As métricas e os
-  hiperparâmetros são os mesmos do slide anterior."
-- "São quase **22 mil registros** de validação, e repare que a **distribuição de classes
-  é diferente** do treino (55,8/44,2 contra 62,3/37,7)."
-
-**Como interpretar:**
-- A leitura é a mesma do slide 3, mas em dado novo. O **ranking se mantém**: Completo
-  ainda lidera, EXP-05 continua o melhor por F1-macro (0,783) e ROC AUC (0,868).
-- O fato de a **distribuição ser diferente** e as métricas continuarem coerentes é um
-  primeiro sinal de **robustez** (fecha no slide de conclusões).
-
----
-
-## Slide 6 — "Teste → Validação"
-
-**Falar:**
-- "Aqui medimos **quanto o desempenho cai** ao sair do teste para os dados nunca vistos."
-- "As quedas são **pequenas e uniformes** — da ordem de **0,03 a 0,04** tanto em F1-macro
-  quanto em ROC AUC, nos quatro modelos."
-- "À esquerda, as matrizes de confusão na validação confirmam que a diagonal continua
-  dominante."
-
-**Como interpretar:**
-- A coluna **Δ** mostra a diferença (validação − teste); todos negativos e próximos —
-  **nenhum modelo desaba**, o que indica **boa generalização** e ausência de
-  sobreajuste severo ao split treino/teste.
-- Se algum Δ fosse muito maior que os outros, indicaria um modelo frágil — não é o caso.
-
----
-
-## Slide 7 — "O que os números mostram" (conclusões)
-
-**Falar (passar pelos 5 pontos, sem inventar além do que está medido):**
-1. "A **engenharia de atributos agrega ganho consistente** — Completo > Baseline em teste
-   e validação."
-2. "O **melhor modelo é o EXP-05**, Random Forest com o conjunto Completo."
-3. "O **Random Forest sobreajusta mais** que o Gradient Boosting: o gap treino–teste de
-   F1-macro é ~0,05 no RF contra ~0,015 no GB. Ou seja, o RF entrega o melhor resultado,
-   mas o GB é mais 'honesto' entre treino e teste."
-4. "Houve **boa generalização** em dados nunca vistos — quedas pequenas e uniformes."
-5. "E **robustez**: a validação tinha distribuição de classes diferente e as métricas se
-   mantiveram estáveis."
-
-**Como interpretar / fechamento:**
-- A mensagem central: **resultados consistentes e que generalizam**, com o conjunto
-  Completo e o Random Forest na frente — dentro da limitação assumida do MODO_RAPIDO.
-- Encerramento honesto: "Os próximos passos naturais são rodar no **modo completo** (grade
-  oficial) e executar a **Regressão Logística** (EXP-01/04) para fechar a comparação."
-
----
-
-## Perguntas prováveis (Q&A)
-
-- **"Por que F1-macro e não acurácia?"** Porque há desbalanceamento moderado (~62/38); a
-  acurácia favoreceria a classe majoritária. F1-macro pondera as duas classes igualmente.
-- **"Por que a Regressão Logística não entrou?"** Decisão de escopo + custo; ela ficou
-  documentada e preparada para a etapa seguinte.
-- **"Os hiperparâmetros são os melhores possíveis?"** Não necessariamente — saíram de um
-  espaço de busca reduzido (MODO_RAPIDO). São os melhores **dentro** dessa busca.
-- **"Como garantem que não houve vazamento na validação?"** Nada foi ajustado na
-  validação: scaler, imputador KNN e modelos vêm todos do treino; `serious` da validação
-  serviu apenas como gabarito.
-- **"Random Forest é melhor que Gradient Boosting?"** Por F1-macro/ROC AUC, sim, por
-  pequena margem; mas o GB tem menor gap treino–teste. A escolha final pode pesar
-  estabilidade vs. pico de desempenho.
-
----
-
-### Apêndice — números de referência (caso perguntem)
-
-| Exp. | Modelo · Conjunto | F1-macro teste | ROC AUC teste | F1-macro valid. | ROC AUC valid. |
-|------|-------------------|:--:|:--:|:--:|:--:|
-| EXP-02 | RF · Baseline | 0,817 | 0,904 | 0,778 | 0,863 |
-| EXP-03 | GB · Baseline | 0,806 | 0,899 | 0,779 | 0,856 |
-| EXP-05 | RF · Completo | **0,826** | **0,909** | **0,783** | **0,868** |
-| EXP-06 | GB · Completo | 0,818 | 0,903 | 0,782 | 0,864 |
-
-- **Hiperparâmetros — Random Forest:** `n_estimators=200, max_depth=None,
-  min_samples_split=5, min_samples_leaf=2, class_weight=balanced`.
-- **Hiperparâmetros — Gradient Boosting:** `n_estimators=100, max_depth=3,
-  learning_rate=0.2`.
-- **Validação:** 21.899 registros; distribuição `serious` 55,8% / 44,2%.
-- **Fonte dos números:** `outputs/resumo_experimentos_arvores.csv`,
-  `outputs/metricas_validacao.csv`, `outputs/comparacao_teste_validacao.csv`.
+### Perguntas prováveis (preparar)
+- **Por que o recall da classe grave é mais baixo?** Desbalanceamento; SMOTE ajuda mas não
+  elimina. Melhorias: ajustar o limiar de decisão, custo assimétrico, mais features.
+- **SMOTE não causa vazamento?** Não: aplicado só nos folds de treino, dentro da CV.
+- **Por que árvores sobreajustam mais?** Maior capacidade; o gap treino–teste evidencia
+  isso frente à Regressão Logística.
+- **Reprodutibilidade?** `random_state=42` em todas as etapas; instruções no README.
