@@ -4,7 +4,7 @@ Script one-off: NÃO treina nem reexecuta o pipeline — apenas lê os CSVs de r
 (`outputs/resumo_experimentos_arvores.csv`, `metricas_validacao.csv`,
 `comparacao_teste_validacao.csv`) e extrai a figura de matrizes de confusão já embutida
 no notebook executado (`notebooks/00_pipeline_completo.ipynb`). As imagens são gravadas em
-`apresentacao_entrega3/img/` (mesmo tema visual da apresentação).
+`apresentacao/img/` (mesmo tema visual da apresentação).
 
 Uso: uv run python scripts/make_presentation_charts.py
 """
@@ -19,7 +19,7 @@ import pandas as pd
 
 PROJ = Path(__file__).resolve().parent.parent
 OUTPUTS = PROJ / "outputs"
-IMG = PROJ / "apresentacao_entrega3" / "img"
+IMG = PROJ / "apresentacao" / "img"
 IMG.mkdir(parents=True, exist_ok=True)
 
 # Paleta consistente por modelo (legível sobre fundo branco do slide).

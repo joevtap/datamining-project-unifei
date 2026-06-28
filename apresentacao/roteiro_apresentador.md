@@ -1,6 +1,6 @@
 # Roteiro do apresentador — Trabalho final (CRISP-DM · Eventos adversos a medicamentos)
 
-Apresentação: `apresentacao_entrega3.html` (11 slides, 16:9). Navegação: setas / espaço /
+Apresentação: `apresentacao.html` (11 slides, 16:9). Navegação: setas / espaço /
 swipe. Tempo-alvo total: ~10–12 min. Os números vêm do **run completo**
 (`MODO_RAPIDO=False`) e estão em `outputs/` — os mesmos exibidos nos slides.
 

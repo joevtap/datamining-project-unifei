@@ -40,10 +40,9 @@ No **VS Code** ou **Jupyter**, abra os notebooks e selecione o kernel do `.venv`
 
 ```
 notebooks/00_pipeline_completo.ipynb  # pipeline CRISP-DM completo (PRINCIPAL)
-notebooks/inferencia_modelos.ipynb    # aplicar modelos salvos a dados nunca vistos
-src/dataprep.py                       # ingestão + transformação + imputador KNN (reutilizável)
+notebooks/inferencia_modelos.ipynb    # aplicar modelos salvos a dados nunca vistos (autocontido)
 scripts/                              # execução remota (EC2) e geração de gráficos
-apresentacao_entrega3/                # apresentação (HTML), roteiro e imagens
+apresentacao/                         # apresentação (HTML), roteiro e imagens
 outputs/                              # resultados (CSVs); models/ é regenerável
 datasets/ , validation/               # dados brutos OpenFDA (NÃO versionados)
 ```
@@ -99,7 +98,7 @@ MODO_RAPIDO=false uv run python scripts/run_notebook.py
   registro com `ijson` (memória O(1), independente do tamanho) e a transformação inteira
   é **uma única *query* Polars** materializada de uma vez em *streaming* — sem DataFrames
   intermediários. Escala para datasets grandes. A modelagem usa um pipeline
-  sklearn/imblearn que só executa no `.fit()`. (Ver `src/dataprep.py`.)
+  sklearn/imblearn que só executa no `.fit()`.
 - **Balanceamento por SMOTE.** O alvo é desbalanceado. Em vez de `class_weight`, usa-se
   **SMOTE** (oversampling sintético baseado em KNN) **dentro** do `imblearn.Pipeline`
   (`ColumnTransformer → SMOTE → modelo`). Ele atua **somente nos *folds* de treino** da
@@ -138,8 +137,8 @@ Saídas em `outputs/`: `resumo_experimentos_arvores.csv` (6 experimentos),
 Há dois caminhos para aplicar os modelos **já treinados** a dados que eles nunca viram:
 
 1. **Notebook dedicado — `notebooks/inferencia_modelos.ipynb` (recomendado).**
-   Carrega um modelo de `outputs/models/`, reaplica a mesma transformação (via
-   `src/dataprep.py`) e o **imputador KNN ajustado só no treino**, e pontua os JSON de uma
+   Autocontido: carrega um modelo de `outputs/models/`, reaplica a mesma transformação do
+   pipeline e o **imputador KNN ajustado só no treino**, e pontua os JSON de uma
    pasta (padrão `validation/`). Reporta as métricas quando há gabarito (`serious`) e salva
    `outputs/predicoes_inferencia.csv`. Use `MAX_RECORDS` para um teste rápido. As colunas
    de entrada são lidas do próprio pipeline (`feature_names_in_`), então o conjunto certo
@@ -208,7 +207,7 @@ bash scripts/fetch_outputs.sh "$HOST"
 
 ## Apresentação
 
-`apresentacao_entrega3/apresentacao_entrega3.html` — deck HTML autocontido (11 slides,
+`apresentacao/apresentacao.html` — deck HTML autocontido (11 slides,
 16:9; setas/espaço/swipe para navegar). Roteiro do apresentador em
 `roteiro_apresentador.md`; gráficos em `img/` (gerados por
 `scripts/make_presentation_charts.py`).
