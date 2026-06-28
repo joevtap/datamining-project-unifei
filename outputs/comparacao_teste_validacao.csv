@@ -1,5 +1,7 @@
 exp_id,modelo,conjunto,teste_f1_macro,validacao_f1_macro,delta_f1_macro,teste_roc_auc,validacao_roc_auc,delta_roc_auc
-EXP-02,Random Forest,Baseline (11),0.8165,0.7776,-0.0389,0.9038,0.8627,-0.0411
-EXP-03,Gradient Boosting,Baseline (11),0.8057,0.7788,-0.0269,0.8989,0.8562,-0.0427
-EXP-05,Random Forest,Completo (17),0.8259,0.7833,-0.0426,0.9089,0.8677,-0.0412
-EXP-06,Gradient Boosting,Completo (17),0.818,0.7819,-0.0361,0.9034,0.8644,-0.039
+EXP-01,Regressão Logística,Baseline (11),0.8052,0.7774,-0.0278,0.8948,0.8555,-0.0393
+EXP-02,Random Forest,Baseline (11),0.8153,0.7771,-0.0382,0.9032,0.8613,-0.0419
+EXP-03,Gradient Boosting,Baseline (11),0.8134,0.7728,-0.0406,0.9021,0.8612,-0.0409
+EXP-04,Regressão Logística,Completo (17),0.8107,0.7806,-0.0301,0.898,0.8636,-0.0344
+EXP-05,Random Forest,Completo (17),0.8246,0.7827,-0.0418,0.9089,0.8665,-0.0424
+EXP-06,Gradient Boosting,Completo (17),0.8235,0.7821,-0.0415,0.9073,0.8693,-0.038

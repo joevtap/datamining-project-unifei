@@ -13,5 +13,12 @@ datasets/
 validation/
 outputs/models/
 
+# Parquet intermediário gerado pela ingestão preguiçosa do 00_final.ipynb (regenerável)
+outputs/_raw_reports_*.parquet
+
+# Log de progresso e notebook executado baixado do remoto (regeneráveis)
+outputs/_progress.log
+notebooks/00_final.remote_trees.ipynb
+
 # Virtual environments
 .venv
