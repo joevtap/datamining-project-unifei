@@ -1,89 +1,75 @@
-# Roteiro do apresentador — Trabalho final (CRISP-DM · Eventos adversos a medicamentos)
+# Roteiro do apresentador
 
-Apresentação: `apresentacao.html` (11 slides, 16:9). Navegação: setas / espaço /
-swipe. Tempo-alvo total: ~10–12 min. Os números vêm do **run completo**
-(`MODO_RAPIDO=False`) e estão em `outputs/` — os mesmos exibidos nos slides.
-
-**Lembretes de vocabulário (valem para o deck todo):**
-- **Alvo `serious`** (classificação binária): `serious = 1` → evento **grave** (classe
-  positiva, ~62% do treino); `serious = 2` → **não-grave**.
-- **F1-macro**: média do F1 entre as duas classes — é a **métrica de seleção** por ser
-  justa sob desbalanceamento. **ROC AUC** usa a probabilidade (`predict_proba`).
+Apresentação: `apresentacao.html` (9 slides, 16:9). Navegação: setas / espaço / swipe.
+Tempo-alvo: ~8–10 min. Estrutura: contexto → pergunta → pipeline → DoE → resultados →
+fechamento crítico.
 
 ---
 
-## Slide 1 — Capa (~30s)
-- Apresentar o tema: prever a **gravidade** (`serious`) de relatórios de eventos adversos
-  a medicamentos do FDA (OpenFDA / FAERS).
-- Frase-âncora: "um pipeline consolidado, com carregamento preguiçoso, balanceamento por
-  SMOTE e um Design de Experimentos de 6 configurações, validado em dados nunca vistos".
+## Slide 1 — Capa (~20s)
+- Abrir com a ideia central: prever a **gravidade** de eventos adversos a medicamentos para
+  **acelerar a triagem** em emergências, usando dados públicos do FDA (OpenFDA / FAERS).
 
-## Slide 2 — O problema e os dados (~1min)
-- Cada registro = um relatório com paciente + lista de medicamentos.
-- Alvo `serious`: **1 = grave**, **2 = não-grave**; **desbalanceado** (~62/38 no treino).
-- ~36 mil relatórios; conjunto Completo tem 17 atributos (originais + 5 de engenharia).
-- Gancho: "o desbalanceamento motiva o SMOTE; o volume motiva o carregamento preguiçoso".
+## Slide 2 — Contexto do problema (~1min)
+- Reações adversas e interações entre medicamentos são comuns e podem ser graves.
+- São relatadas ao sistema do FDA (FAERS) e publicadas abertamente no OpenFDA.
+- Na emergência, decidir rápido o que é grave (triagem) é crítico e custoso.
+- Números: ~36 mil relatórios; alvo `serious` (grave/não-grave); classes desbalanceadas (~62/38).
 
-## Slide 3 — Pipeline CRISP-DM (~1min)
-- Percorrer o fluxo: ingestão streaming → transformação lazy → imputação KNN da faixa
-  etária → split 70/30 → SMOTE (só no treino) → DoE → validação.
-- **Mensagem-chave:** tudo que aprende (KNN, SMOTE, scaler, TF-IDF, modelos) é ajustado
-  **só no treino** → **zero vazamento**.
+## Slide 3 — Pergunta de negócio (~45s)
+- A pergunta que guia o trabalho: **dá para prever a gravidade de um novo caso a partir de
+  relatórios passados de outros pacientes?**
+- Se sim, o modelo prioriza automaticamente os casos mais prováveis de graves → triagem mais rápida.
 
-## Slide 4 — Método: carregamento preguiçoso (Polars) (~1min30)
-- `ijson` lê registro a registro (memória O(1)); a transformação é **uma única query**
-  Polars, materializada uma vez em streaming.
-- Benefício: escala para datasets grandes (~2,8 GB) sem materializar etapas intermediárias.
-- A modelagem é um pipeline sklearn/imblearn que **só executa no `.fit()`**.
+## Slide 4 — Pipeline dos dados (~1min30)
+- Fluxo: coleta (OpenFDA, JSON) → limpeza e uma linha por relatório → faixa etária estimada
+  por KNN → engenharia de atributos → balanceamento por SMOTE → dataset final.
+- Explicar em uma frase cada método (sem entrar em código):
+  - **KNN** completa a idade faltante a partir de casos parecidos (aprendido só no treino).
+  - **Engenharia de atributos**: cria sinais úteis (nº de medicamentos/substâncias, indicadores).
+  - **SMOTE**: gera exemplos sintéticos da classe minoritária para o treino ver as duas
+    classes de forma equilibrada.
+- Dataset final: alvo `serious`; dois conjuntos — Baseline (originais) e Completo (+ engenharia).
 
-## Slide 5 — Método: SMOTE (~1min30)
-- Por que SMOTE e não `class_weight`: sintetiza exemplos da minoria (via KNN) em vez de só
-  reponderar a perda.
-- Posição no pipeline: `ColumnTransformer → SMOTE → modelo`; com `imblearn.Pipeline` atua
-  **só nos folds de treino** (sem vazamento).
-- `sampling_strategy="auto"` → dataset-agnóstico. Resultado: treino vai de 14.089/8.527
-  para 14.089/14.089.
+## Slide 5 — Design de Experimentos (~1min)
+- 3 modelos (Regressão Logística, Random Forest, Gradient Boosting) × 2 conjuntos = 6 experimentos.
+- Seleção por **F1-macro** (justa com desbalanceamento), via validação cruzada.
+- Avaliação final no teste (30%) e em dados nunca vistos. Mesmo procedimento para todos.
 
-## Slide 6 — DoE: 6 experimentos (~1min)
-- 3 modelos (Regressão Logística, Random Forest, Gradient Boosting) × 2 conjuntos
-  (Baseline 11, Completo 17) = EXP-01 a EXP-06.
-- LR por `GridSearchCV`; árvores por `RandomizedSearchCV`. Seleção por **f1_macro**,
-  `StratifiedKFold` cv=5, `random_state=42`.
+## Slide 6 — Resultados: desempenho (~1min)
+- Gráfico: o conjunto **Completo** supera o **Baseline** nos três modelos.
+- Árvores no topo; Regressão Logística competitiva.
+- **Modelo escolhido: Random Forest · Completo** — F1-macro 0,825 e ROC AUC 0,909 no teste.
 
-## Slide 7 — Resultados no teste (~1min30)
-- Ler a linha vencedora: **EXP-05 (RF · Completo)** — F1-macro **0,825**, ROC AUC **0,909**.
-- EXP-06 (GB · Completo) praticamente empatado.
-- Notar que a precisão da classe 1 é alta (~0,92) e o recall é o ponto mais fraco — efeito
-  do desbalanceamento mesmo após SMOTE.
+## Slide 7 — Resultados: generalização (~1min)
+- Gráfico teste × validação: quedas pequenas e uniformes (~0,03–0,04).
+- O ranking entre modelos se mantém; funciona mesmo com a validação tendo distribuição
+  diferente (55,8/44,2). Conclusão: **generaliza bem**, sem sobreajuste evidente.
 
-## Slide 8 — Visualização no teste (~1min)
-- Gráfico esquerdo: **Completo > Baseline** nos três modelos (F1-macro e ROC AUC).
-- Matrizes de confusão: a diagonal domina; os erros se concentram em prever "2" quando é
-  "1" (falsos não-graves) — relevante no domínio clínico.
+## Slide 8 — Fechamento crítico: dá para implantar? (~1min30)
+- Veredito honesto: **ainda não** como decisão autônoma. Serve como **apoio à triagem** —
+  prioriza, mas a decisão final é do profissional (humano no circuito).
+- Limitações:
+  - **Recall da classe grave**: ~32% dos casos graves passam despercebidos na validação. Em
+    triagem, o falso negativo é o erro mais caro.
+  - **Viés da fonte**: OpenFDA é feito de relatos voluntários (subnotificação, sem causalidade
+    comprovada) — pode não refletir toda a população clínica.
 
-## Slide 9 — Validação em dados nunca vistos (~1min)
-- Mesmas métricas e hiperparâmetros, aplicados a 21.899 registros de **outros** arquivos.
-- Distribuição diferente (55,8/44,2) e ainda assim métricas estáveis (~0,78 F1-macro).
-- Reforçar: pipeline reaplicado **sem vazamento** (parâmetros do treino).
-
-## Slide 10 — Teste × validação (~1min)
-- Quedas **pequenas e uniformes** (~0,03–0,04) em F1-macro e ROC AUC → boa generalização.
-- O **ranking** entre modelos se mantém do teste para a validação.
-
-## Slide 11 — Conclusões (~1min)
-1. Engenharia de atributos agrega ganho consistente (Completo > Baseline nos 3 modelos).
-2. Melhor: EXP-05 (RF · Completo); EXP-06 (GB) empatado.
-3. Regressão Logística é competitiva e a mais barata, e **generaliza melhor** (gap
-   treino–teste ~0,006 vs ~0,05–0,06 das árvores).
-4. Boa generalização em dados nunca vistos; ranking preservado.
-5. Robustez mesmo com distribuição de classes diferente na validação.
+## Slide 9 — Caminho para produção (~1min)
+- Implantar é um **ciclo** (CRISP-DM, fase de Implantação), não um evento único:
+  servir o modelo → monitorar (desempenho + drift) → re-treino offline periódico →
+  CI/CD de dados e modelo → revalidação contínua → realimenta o ciclo.
+- Mensagem final: com esse ciclo mínimo, o modelo pode entrar com segurança como ferramenta
+  de apoio; sem ele, não.
 
 ---
 
-### Perguntas prováveis (preparar)
-- **Por que o recall da classe grave é mais baixo?** Desbalanceamento; SMOTE ajuda mas não
-  elimina. Melhorias: ajustar o limiar de decisão, custo assimétrico, mais features.
-- **SMOTE não causa vazamento?** Não: aplicado só nos folds de treino, dentro da CV.
-- **Por que árvores sobreajustam mais?** Maior capacidade; o gap treino–teste evidencia
-  isso frente à Regressão Logística.
-- **Reprodutibilidade?** `random_state=42` em todas as etapas; instruções no README.
+### Perguntas prováveis
+- **Por que o recall da classe grave é mais baixo?** Desbalanceamento; o SMOTE ajuda mas não
+  elimina. Melhorias: ajustar o limiar de decisão, custo assimétrico, mais atributos.
+- **Por que F1-macro e não acurácia?** Acurácia engana com classes desbalanceadas; F1-macro
+  pesa as duas classes igualmente.
+- **Por que Random Forest e não Gradient Boosting?** Empate técnico; o Random Forest leva
+  ligeira vantagem no teste e é robusto e simples de manter.
+- **Como evitar vazamento de dados?** Tudo que aprende (imputação, balanceamento, escala) é
+  ajustado só no treino; a validação usa dados nunca vistos.
