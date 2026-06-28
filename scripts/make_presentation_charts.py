@@ -3,7 +3,7 @@
 Script one-off: NÃO treina nem reexecuta o pipeline — apenas lê os CSVs de resultado
 (`outputs/resumo_experimentos_arvores.csv`, `metricas_validacao.csv`,
 `comparacao_teste_validacao.csv`) e extrai a figura de matrizes de confusão já embutida
-no notebook executado (`notebooks/00_final.ipynb`). As imagens são gravadas em
+no notebook executado (`notebooks/00_pipeline_completo.ipynb`). As imagens são gravadas em
 `apresentacao_entrega3/img/` (mesmo tema visual da apresentação).
 
 Uso: uv run python scripts/make_presentation_charts.py
@@ -142,7 +142,7 @@ def main():
     comp = pd.read_csv(OUTPUTS / "comparacao_teste_validacao.csv")
     grafico_baseline_vs_completo(resumo)
     grafico_teste_vs_validacao(comp)
-    extrai_matrizes_confusao(PROJ / "notebooks" / "00_final.ipynb", IMG / "cm_teste.png")
+    extrai_matrizes_confusao(PROJ / "notebooks" / "00_pipeline_completo.ipynb", IMG / "cm_teste.png")
 
 
 if __name__ == "__main__":

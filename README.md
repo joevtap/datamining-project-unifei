@@ -6,7 +6,7 @@ Adverse Event Reporting System), o objetivo é **prever a gravidade** de um rela
 o atributo `serious` (`1` = grave, `2` = não-grave), um problema de **classificação
 binária** com classes **desbalanceadas** (~62% / 38% no treino).
 
-Todo o fluxo está consolidado em um único notebook — **`notebooks/00_final.ipynb`** —
+Todo o fluxo está consolidado em um único notebook — **`notebooks/00_pipeline_completo.ipynb`** —
 que vai do JSON bruto até a avaliação em dados nunca vistos.
 
 ## Resultado principal
@@ -39,9 +39,8 @@ No **VS Code** ou **Jupyter**, abra os notebooks e selecione o kernel do `.venv`
 ## Estrutura do repositório
 
 ```
-notebooks/00_final.ipynb              # pipeline CRISP-DM completo (PRINCIPAL)
-notebooks/07_inferencia_validacao.ipynb  # aplicar modelos salvos a dados nunca vistos
-notebooks/01..06_*.ipynb              # notebooks originais por entrega (histórico)
+notebooks/00_pipeline_completo.ipynb  # pipeline CRISP-DM completo (PRINCIPAL)
+notebooks/inferencia_modelos.ipynb    # aplicar modelos salvos a dados nunca vistos
 src/dataprep.py                       # ingestão + transformação + imputador KNN (reutilizável)
 scripts/                              # execução remota (EC2) e geração de gráficos
 apresentacao_entrega3/                # apresentação (HTML), roteiro e imagens
@@ -58,11 +57,11 @@ São grandes (~2,8 GB) e estão no `.gitignore`; coloque-os manualmente:
 | `datasets/` | JSON brutos da OpenFDA para treino/teste (~1,6 GB) | não |
 | `validation/` | JSON brutos (mesmo formato) para validação final (~1,2 GB) | não |
 | `outputs/` | Artefatos gerados (CSVs) | sim (exceto `models/`, parquet e `_progress.log`) |
-| `outputs/models/` | Modelos treinados `*.joblib` — **regeneráveis** rodando o `00_final` | não |
+| `outputs/models/` | Modelos treinados `*.joblib` — **regeneráveis** rodando o `00_pipeline_completo` | não |
 
 > Os arquivos têm nomes no padrão OpenFDA (`drug-event-0001-of-0028.json`, etc.).
 
-## Notebook principal — `notebooks/00_final.ipynb`
+## Notebook principal — `notebooks/00_pipeline_completo.ipynb`
 
 Executa todo o CRISP-DM de ponta a ponta:
 
@@ -87,7 +86,7 @@ execução headless só descarrega a saída das células ao final.
 ### Como rodar
 
 ```bash
-# Interface: abra notebooks/00_final.ipynb e rode todas as células.
+# Interface: abra notebooks/00_pipeline_completo.ipynb e rode todas as células.
 # Headless (linha de comando), modo rápido:
 MODO_RAPIDO=true uv run python scripts/run_notebook.py
 # Run completo (custoso — prefira uma máquina potente / EC2):
@@ -138,7 +137,7 @@ Saídas em `outputs/`: `resumo_experimentos_arvores.csv` (6 experimentos),
 
 Há dois caminhos para aplicar os modelos **já treinados** a dados que eles nunca viram:
 
-1. **Notebook dedicado — `notebooks/07_inferencia_validacao.ipynb` (recomendado).**
+1. **Notebook dedicado — `notebooks/inferencia_modelos.ipynb` (recomendado).**
    Carrega um modelo de `outputs/models/`, reaplica a mesma transformação (via
    `src/dataprep.py`) e o **imputador KNN ajustado só no treino**, e pontua os JSON de uma
    pasta (padrão `validation/`). Reporta as métricas quando há gabarito (`serious`) e salva
@@ -146,8 +145,8 @@ Há dois caminhos para aplicar os modelos **já treinados** a dados que eles nun
    de entrada são lidas do próprio pipeline (`feature_names_in_`), então o conjunto certo
    (Baseline/Completo) é escolhido automaticamente.
 
-2. **Reaproveitando o `00_final`.** Com os modelos presentes e `REUSE_TRAINED=true`
-   (padrão), rodar o `00_final` **não retreina** — ele carrega os modelos, pula a busca e
+2. **Reaproveitando o `00_pipeline_completo`.** Com os modelos presentes e `REUSE_TRAINED=true`
+   (padrão), rodar o `00_pipeline_completo` **não retreina** — ele carrega os modelos, pula a busca e
    reavalia, inclusive na validação, regravando `metricas_validacao.csv`.
 
 > Pontuar dados brutos exige reingerir/transformar os JSON-alvo (a validação tem ~1,2 GB);
@@ -214,15 +213,13 @@ bash scripts/fetch_outputs.sh "$HOST"
 `roteiro_apresentador.md`; gráficos em `img/` (gerados por
 `scripts/make_presentation_charts.py`).
 
-## Notebooks históricos (entregas anteriores)
-
-`notebooks/01..06_*.ipynb` documentam a evolução por entrega (preparação, transformação,
-visualização, planejamento e execução do DoE de árvores, validação). O **`00_final`**
-consolida e moderniza esse fluxo (lazy + SMOTE + DoE completo com Regressão Logística) e é
-o ponto de entrada recomendado.
+> Histórico: o fluxo original era dividido em notebooks por entrega (preparação,
+> transformação, DoE de árvores, validação). O **`00_pipeline_completo`** consolidou e
+> modernizou tudo (lazy + SMOTE + DoE completo com Regressão Logística); a evolução
+> anterior permanece no histórico de commits do git.
 
 ## Execução headless (genérica)
 
 ```bash
-NOTEBOOK=notebooks/00_final.ipynb MODO_RAPIDO=false uv run python scripts/run_notebook.py
+NOTEBOOK=notebooks/00_pipeline_completo.ipynb MODO_RAPIDO=false uv run python scripts/run_notebook.py
 ```

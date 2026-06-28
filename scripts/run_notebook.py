@@ -5,7 +5,7 @@ Reusa o padrão "Execução headless" do README. Roda o notebook no diretório n
 volta no mesmo arquivo, preservando as saídas das células.
 
 Configurável por variáveis de ambiente:
-- NOTEBOOK    : caminho do notebook (padrão: notebooks/00_final.ipynb)
+- NOTEBOOK    : caminho do notebook (padrão: notebooks/00_pipeline_completo.ipynb)
 - CELL_TIMEOUT: tempo máximo por célula, em segundos (padrão: 36000 = 10 h)
 - MODO_RAPIDO : herdado pelo kernel; controla a carga do DoE (ver Seção 0 do notebook)
 """
@@ -14,7 +14,7 @@ import os
 import nbformat
 from nbclient import NotebookClient
 
-NOTEBOOK = os.environ.get("NOTEBOOK", "notebooks/00_final.ipynb")
+NOTEBOOK = os.environ.get("NOTEBOOK", "notebooks/00_pipeline_completo.ipynb")
 CELL_TIMEOUT = int(os.environ.get("CELL_TIMEOUT", "36000"))
 
 

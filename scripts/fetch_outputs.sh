@@ -28,6 +28,6 @@ rsync -avhP --partial --exclude '_raw_reports_*.parquet' -e "$RSYNC_RSH" \
 
 echo ">> Trazendo o notebook executado"
 rsync -avhP --partial -e "$RSYNC_RSH" \
-    "$HOST:$REMOTE/notebooks/00_final.ipynb" notebooks/00_final.ipynb
+    "$HOST:$REMOTE/notebooks/00_pipeline_completo.ipynb" notebooks/00_pipeline_completo.ipynb
 
 echo ">> Download concluído. Veja outputs/resumo_experimentos_arvores.csv"
