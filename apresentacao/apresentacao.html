@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrega 3 — Execução do Experimento (DoE de Árvores + Validação)</title>
+    <title>Mineração de Dados — CRISP-DM · Eventos Adversos a Medicamentos (OpenFDA)</title>
 
     <!-- joevtap-style: Merriweather (serif) + Geist (sans) + JetBrains Mono (mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -149,7 +149,7 @@
         table.tbl thead th.lft { text-align: left; }
         table.tbl tbody td {
             font-size: 23px; color: var(--text); text-align: right;
-            padding: 20px 0; border-bottom: 1px solid var(--rule);
+            padding: 18px 0; border-bottom: 1px solid var(--rule);
             font-variant-numeric: tabular-nums;
         }
         table.tbl tbody td.lft { text-align: left; color: var(--muted); }
@@ -188,12 +188,34 @@
         .pill.off { color: var(--faint); }
 
         /* ===========================================
+           METHOD SLIDES — bullets, pipeline flow, code, stats
+           =========================================== */
+        .bullets { display: flex; flex-direction: column; gap: 18px; max-width: 1520px; }
+        .bullets .b { display: flex; gap: 18px; align-items: baseline; font-family: var(--font-sans); font-size: 23px; line-height: 1.5; color: var(--text); }
+        .bullets .b .mk { font-family: var(--font-mono); font-size: 16px; color: var(--accent); min-width: 26px; }
+        .bullets .b b { color: var(--text); font-weight: 600; }
+        .bullets .b .muted2 { color: var(--muted); }
+
+        .flow { display: flex; flex-wrap: wrap; gap: 14px 8px; align-items: stretch; max-width: 1680px; }
+        .flow .step { font-family: var(--font-mono); font-size: 18px; color: var(--text); background: var(--ink-surface); border: 1px solid var(--rule); padding: 16px 20px; }
+        .flow .step .n { color: var(--accent); margin-right: 10px; }
+        .flow .arrow { align-self: center; color: var(--faint); font-family: var(--font-mono); font-size: 20px; }
+
+        .code-card { background: var(--code-bg); border: 1px solid var(--rule); padding: 26px 30px; font-family: var(--font-mono); font-size: 18px; line-height: 1.75; color: var(--text); }
+        .code-card .c { color: var(--faint); }
+        .code-card .k { color: var(--accent); }
+
+        .stat-row { display: flex; gap: 80px; margin-top: 6px; }
+        .stat .num { font-family: var(--font-serif); font-size: 58px; color: var(--accent); line-height: 1; }
+        .stat .cap { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-top: 12px; max-width: 260px; }
+
+        /* ===========================================
            IMAGES (notebook plots — light on dark = framed)
            =========================================== */
         .plot-row { display: flex; gap: var(--gap-lg); align-items: stretch; }
         .plot-card { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
         .plot-card img {
-            width: 100%; height: auto; max-height: 600px; object-fit: contain;
+            width: 100%; height: auto; max-height: 620px; object-fit: contain;
             background: #ffffff; border: 1px solid var(--rule); border-radius: 0; padding: 10px;
         }
         .plot-cap { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
@@ -201,22 +223,22 @@
         .two-col-vis { display: flex; gap: 64px; align-items: center; height: 100%; }
         .two-col-vis .col-img { flex: 1.15; min-width: 0; display: flex; justify-content: center; }
         .two-col-vis .col-img img {
-            width: 100%; height: auto; max-height: 720px; object-fit: contain;
+            width: 100%; height: auto; max-height: 760px; object-fit: contain;
             background: #ffffff; border: 1px solid var(--rule); padding: 10px;
         }
         .two-col-vis .col-side { flex: 0.85; min-width: 0; }
 
         /* conclusions list */
-        .concl { display: flex; flex-direction: column; gap: 26px; max-width: 1560px; }
+        .concl { display: flex; flex-direction: column; gap: 22px; max-width: 1580px; }
         .concl .item { display: flex; gap: 22px; align-items: baseline; }
         .concl .item .mk { font-family: var(--font-mono); font-size: 16px; color: var(--accent); min-width: 30px; }
-        .concl .item .tx { font-family: var(--font-sans); font-size: 24px; line-height: 1.5; color: var(--text); }
+        .concl .item .tx { font-family: var(--font-sans); font-size: 23px; line-height: 1.5; color: var(--text); }
         .concl .item .tx b { font-weight: 600; color: var(--text); }
-        .concl .item .tx .q { color: var(--accent); font-family: var(--font-mono); font-size: 21px; }
+        .concl .item .tx .q { color: var(--accent); font-family: var(--font-mono); font-size: 20px; }
 
         /* delta table (compact) */
-        table.delta td, table.delta th { font-size: 20px; }
-        .neg { color: var(--muted); font-family: var(--font-mono); font-size: 19px; }
+        table.delta td, table.delta th { font-size: 19px; }
+        .neg { color: var(--muted); font-family: var(--font-mono); font-size: 18px; }
 
         /* ===========================================
            STAGGERED REVEAL
@@ -240,222 +262,175 @@
     <div class="deck-viewport">
         <div class="deck-stage" id="deckStage">
 
-            <!-- ===== SLIDE 1 — DoE PLANEJADO ===== -->
+            <!-- ===== SLIDE 1 — CAPA ===== -->
             <section class="slide slide-content active">
-                <div class="head-stack">
-                    <p class="kicker reveal">Entrega 3 · Design de Experimentos</p>
-                    <h2 class="h2 reveal">O que o DoE previa</h2>
-                </div>
-                <table class="tbl doe-table reveal">
-                    <thead>
-                        <tr>
-                            <th class="lft">Exp.</th>
-                            <th class="lft">Conjunto de atributos</th>
-                            <th class="lft">Modelo</th>
-                            <th class="lft">Busca de hiperparâmetros</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="dim"><td class="lft"><span class="expid">EXP-01</span></td><td class="lft">Baseline (11)</td><td class="lft">Regressão Logística</td><td class="lft">GridSearchCV</td></tr>
-                        <tr><td class="lft"><span class="expid">EXP-02</span></td><td class="lft">Baseline (11)</td><td class="lft">Random Forest</td><td class="lft">RandomizedSearchCV</td></tr>
-                        <tr><td class="lft"><span class="expid">EXP-03</span></td><td class="lft">Baseline (11)</td><td class="lft">Gradient Boosting</td><td class="lft">RandomizedSearchCV</td></tr>
-                        <tr class="dim"><td class="lft"><span class="expid">EXP-04</span></td><td class="lft">Completo (17)</td><td class="lft">Regressão Logística</td><td class="lft">GridSearchCV</td></tr>
-                        <tr><td class="lft"><span class="expid">EXP-05</span></td><td class="lft">Completo (17)</td><td class="lft">Random Forest</td><td class="lft">RandomizedSearchCV</td></tr>
-                        <tr><td class="lft"><span class="expid">EXP-06</span></td><td class="lft">Completo (17)</td><td class="lft">Gradient Boosting</td><td class="lft">RandomizedSearchCV</td></tr>
-                    </tbody>
-                </table>
-                <p class="note reveal">Seleção por f1_macro · StratifiedKFold · refit = f1_macro · random_state = 42 · alvo serious (classificação binária)</p>
-                <p class="counter">01 / 07</p>
+                <p class="kicker reveal">Mineração de Dados · CRISP-DM · UNIFEI</p>
+                <h1 class="h1 reveal" style="margin: 16px 0 24px; max-width: 1560px;">Triagem inteligente de<br>eventos adversos a medicamentos</h1>
+                <p class="lead reveal" style="max-width: 1340px;">Prever a <span class="mint">gravidade</span> de um caso para <span class="em-text">acelerar a triagem</span> de emergências em hospitais.</p>
+                <p class="label reveal" style="margin-top: 44px;">Dados públicos do FDA (OpenFDA / FAERS) · classificação binária do atributo serious</p>
+                <p class="counter">01 / 09</p>
             </section>
 
-            <!-- ===== SLIDE 2 — EXECUÇÃO REAL ===== -->
+            <!-- ===== SLIDE 2 — CONTEXTO DO PROBLEMA ===== -->
             <section class="slide slide-content">
                 <div class="head-stack">
-                    <p class="kicker reveal">Execução</p>
-                    <h2 class="h2 reveal">O que rodou, sob limitação de hardware</h2>
+                    <p class="kicker reveal">Contexto</p>
+                    <h2 class="h2 reveal">O problema</h2>
                 </div>
-                <div class="two-col reveal">
-                    <div class="col">
-                        <p class="label col-head">Executados — modelos de árvore</p>
-                        <div class="pill-list">
-                            <div class="pill"><span class="pid">EXP-02</span><span>Random Forest · Baseline</span></div>
-                            <div class="pill"><span class="pid">EXP-03</span><span>Gradient Boosting · Baseline</span></div>
-                            <div class="pill"><span class="pid">EXP-05</span><span>Random Forest · Completo</span></div>
-                            <div class="pill"><span class="pid">EXP-06</span><span>Gradient Boosting · Completo</span></div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <p class="label col-head">Adiados</p>
-                        <div class="pill-list">
-                            <div class="pill off"><span class="pid">EXP-01</span><span>Regressão Logística · Baseline</span></div>
-                            <div class="pill off"><span class="pid">EXP-04</span><span>Regressão Logística · Completo</span></div>
-                        </div>
-                    </div>
-                </div>
-                <p class="body reveal" style="margin-top:48px; max-width:1500px;">
-                    <span class="em-text">MODO_RAPIDO = True</span> (máquina sem capacidade para o modo completo): grades de
-                    hiperparâmetros <span class="em-text">reduzidas</span> e <span class="em-text">cv = 3</span>. Os hiperparâmetros saem de um
-                    espaço de busca reduzido — <span class="em-text">não</span> são a Tabela 1 oficial do PDF.
+                <p class="body reveal" style="max-width: 1480px; color: var(--text); font-size: 24px; margin-bottom: 46px;">
+                    Reações adversas e interações entre medicamentos são frequentes e às vezes
+                    <span class="em-text">graves</span> — chegando a emergências. Esses casos são relatados ao sistema do
+                    FDA (FAERS) e publicados abertamente no <span class="em-text">OpenFDA</span>. Em um pronto-socorro,
+                    decidir <span class="em-text">rápido</span> quais casos são graves (a triagem) é crítico e custoso.
                 </p>
-                <p class="counter">02 / 07</p>
+                <div class="stat-row reveal">
+                    <div class="stat"><div class="num">~36 mil</div><div class="cap">relatórios analisados</div></div>
+                    <div class="stat"><div class="num">grave / não-grave</div><div class="cap">o que queremos prever (serious)</div></div>
+                    <div class="stat"><div class="num">62 / 38</div><div class="cap">proporção das classes (desbalanceada)</div></div>
+                </div>
+                <p class="note reveal" style="margin-top: 48px;">Cada relatório traz dados do paciente e os medicamentos envolvidos.</p>
+                <p class="counter">02 / 09</p>
             </section>
 
-            <!-- ===== SLIDE 3 — RESULTADOS NO TESTE ===== -->
+            <!-- ===== SLIDE 3 — PERGUNTA DE NEGÓCIO ===== -->
+            <section class="slide slide-content">
+                <p class="kicker reveal">Pergunta de negócio</p>
+                <h2 class="h2 reveal" style="font-size: 60px; max-width: 1560px; margin: 18px 0 36px;">
+                    É possível prever a <span class="mint">gravidade</span> de um novo caso a partir de
+                    relatórios passados de outros pacientes?
+                </h2>
+                <p class="lead reveal" style="max-width: 1420px;">
+                    Se sim, o modelo pode <span class="em-text">priorizar automaticamente</span> os casos com maior
+                    chance de serem graves e <span class="em-text">acelerar a triagem</span> de emergências.
+                </p>
+                <p class="counter">03 / 09</p>
+            </section>
+
+            <!-- ===== SLIDE 4 — PIPELINE DOS DADOS ===== -->
             <section class="slide slide-content">
                 <div class="head-stack">
-                    <p class="kicker reveal">Resultados · Conjunto de teste (30%)</p>
-                    <h2 class="h2 reveal">Métricas por modelo</h2>
+                    <p class="kicker reveal">Pipeline dos dados</p>
+                    <h2 class="h2 reveal">Da coleta ao dataset final</h2>
                 </div>
-                <table class="tbl reveal">
-                    <thead>
-                        <tr>
-                            <th class="lft">Experimento</th>
-                            <th>Acur.</th>
-                            <th>Bal. acc.</th>
-                            <th class="col-sep">Prec. (1)</th>
-                            <th>Rec. (1)</th>
-                            <th>F1 (1)</th>
-                            <th class="col-sep">F1-macro</th>
-                            <th>ROC AUC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-02</span><span class="model">Random Forest · Baseline</span></td>
-                            <td>0,821</td><td>0,832</td><td class="col-sep">0,914</td><td>0,787</td><td>0,846</td><td class="col-sep">0,817</td><td>0,904</td>
-                        </tr>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-03</span><span class="model">Gradient Boosting · Baseline</span></td>
-                            <td>0,814</td><td>0,812</td><td class="col-sep">0,873</td><td>0,821</td><td>0,846</td><td class="col-sep">0,806</td><td>0,899</td>
-                        </tr>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-05</span><span class="model">Random Forest · Completo</span></td>
-                            <td>0,830</td><td class="best">0,843</td><td class="col-sep">0,925</td><td>0,792</td><td>0,853</td><td class="col-sep best">0,826</td><td class="best">0,909</td>
-                        </tr>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-06</span><span class="model">Gradient Boosting · Completo</span></td>
-                            <td>0,825</td><td>0,826</td><td class="col-sep">0,889</td><td>0,822</td><td>0,854</td><td class="col-sep">0,818</td><td>0,903</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="hp reveal">
-                    <span><span class="hp-k">Random Forest</span>n_estimators=200 · max_depth=None · min_samples_split=5 · min_samples_leaf=2 · class_weight=balanced</span>
-                    <span><span class="hp-k">Gradient Boosting</span>n_estimators=100 · max_depth=3 · learning_rate=0.2</span>
+                <div class="flow reveal" style="margin-bottom: 44px;">
+                    <div class="step"><span class="n">1</span>Coleta (OpenFDA · JSON)</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">2</span>Limpeza + 1 linha por relatório</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">3</span>Faixa etária estimada (KNN)</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">4</span>Engenharia de atributos</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">5</span>Balanceamento (SMOTE)</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">6</span>Dataset final</div>
                 </div>
-                <p class="counter">03 / 07</p>
+                <div class="bullets reveal">
+                    <div class="b"><span class="mk">·</span><span><b>Faixa etária por KNN:</b> estima a idade faltante a partir de casos parecidos <span class="muted2">(aprendido só no treino).</span></span></div>
+                    <div class="b"><span class="mk">·</span><span><b>Engenharia de atributos:</b> deriva sinais úteis (nº de medicamentos e substâncias, indicadores).</span></div>
+                    <div class="b"><span class="mk">·</span><span><b>Balanceamento por SMOTE:</b> cria exemplos sintéticos da classe minoritária para o treino ver as duas classes de forma equilibrada.</span></div>
+                </div>
+                <p class="note reveal">Dataset final — alvo <span class="mint">serious</span>; dois conjuntos: <span class="em-text">Baseline</span> (atributos originais) e <span class="em-text">Completo</span> (+ engenharia de atributos).</p>
+                <p class="counter">04 / 09</p>
             </section>
 
-            <!-- ===== SLIDE 4 — VISUALIZAÇÃO (TESTE) ===== -->
+            <!-- ===== SLIDE 5 — DoE ===== -->
             <section class="slide slide-content">
                 <div class="head-stack">
-                    <p class="kicker reveal">Visualização · Teste</p>
-                    <h2 class="h2 reveal">Engenharia de atributos e acertos por classe</h2>
+                    <p class="kicker reveal">Design de Experimentos (DoE)</p>
+                    <h2 class="h2 reveal">Como comparamos os modelos</h2>
                 </div>
-                <div class="plot-row reveal">
-                    <div class="plot-card">
-                        <img src="img/baseline_vs_completo.png" alt="Comparação Baseline x Completo em F1-macro e ROC AUC no teste">
-                        <p class="plot-cap">Baseline × Completo — F1-macro e ROC AUC (teste)</p>
-                    </div>
-                    <div class="plot-card">
-                        <img src="img/cm_teste.png" alt="Matrizes de confusão dos quatro experimentos no teste">
-                        <p class="plot-cap">Matrizes de confusão — teste (1 = grave, 2 = não-grave)</p>
-                    </div>
+                <div class="bullets reveal">
+                    <div class="b"><span class="mk">01</span><span><b>Três modelos:</b> Regressão Logística, Random Forest e Gradient Boosting.</span></div>
+                    <div class="b"><span class="mk">02</span><span><b>Dois conjuntos de atributos</b> (Baseline e Completo) → <b>6 experimentos</b>, para medir o ganho da engenharia.</span></div>
+                    <div class="b"><span class="mk">03</span><span><b>Seleção pela métrica F1-macro</b> (justa com classes desbalanceadas), usando validação cruzada.</span></div>
+                    <div class="b"><span class="mk">04</span><span><b>Avaliação final</b> no conjunto de <b>teste (30%)</b> e em <b>dados nunca vistos</b>.</span></div>
                 </div>
-                <p class="counter">04 / 07</p>
+                <p class="note reveal" style="margin-top: 40px;">Mesmo procedimento e mesmas métricas para todos — comparação justa.</p>
+                <p class="counter">05 / 09</p>
             </section>
 
-            <!-- ===== SLIDE 5 — VALIDAÇÃO (DADOS NUNCA VISTOS) ===== -->
-            <section class="slide slide-content">
-                <div class="head-stack">
-                    <p class="kicker reveal">Validação · Dados nunca vistos</p>
-                    <h2 class="h2 reveal">Mesmas métricas, mesmos hiperparâmetros</h2>
-                </div>
-                <table class="tbl reveal">
-                    <thead>
-                        <tr>
-                            <th class="lft">Experimento</th>
-                            <th>Acur.</th>
-                            <th>Bal. acc.</th>
-                            <th class="col-sep">Prec. (1)</th>
-                            <th>Rec. (1)</th>
-                            <th>F1 (1)</th>
-                            <th class="col-sep">F1-macro</th>
-                            <th>ROC AUC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-02</span><span class="model">Random Forest · Baseline</span></td>
-                            <td>0,778</td><td>0,791</td><td class="col-sep">0,900</td><td>0,677</td><td>0,773</td><td class="col-sep">0,778</td><td>0,863</td>
-                        </tr>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-03</span><span class="model">Gradient Boosting · Baseline</span></td>
-                            <td>0,779</td><td>0,787</td><td class="col-sep">0,862</td><td>0,719</td><td>0,784</td><td class="col-sep">0,779</td><td>0,856</td>
-                        </tr>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-05</span><span class="model">Random Forest · Completo</span></td>
-                            <td class="best">0,783</td><td class="best">0,797</td><td class="col-sep">0,912</td><td>0,677</td><td>0,777</td><td class="col-sep best">0,783</td><td class="best">0,868</td>
-                        </tr>
-                        <tr>
-                            <td class="lft"><span class="expid">EXP-06</span><span class="model">Gradient Boosting · Completo</span></td>
-                            <td>0,782</td><td>0,792</td><td class="col-sep">0,880</td><td>0,706</td><td>0,783</td><td class="col-sep">0,782</td><td>0,864</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="hp reveal">
-                    <span><span class="hp-k">Random Forest</span>n_estimators=200 · max_depth=None · min_samples_split=5 · min_samples_leaf=2 · class_weight=balanced</span>
-                    <span><span class="hp-k">Gradient Boosting</span>n_estimators=100 · max_depth=3 · learning_rate=0.2</span>
-                </div>
-                <p class="note reveal">21.899 registros de validação · distribuição serious 55,8% / 44,2% (treino: 62,3% / 37,7%) · pipeline reaplicado sem vazamento</p>
-                <p class="counter">05 / 07</p>
-            </section>
-
-            <!-- ===== SLIDE 6 — TESTE × VALIDAÇÃO ===== -->
+            <!-- ===== SLIDE 6 — RESULTADOS: DESEMPENHO ===== -->
             <section class="slide">
                 <div class="two-col-vis" style="padding: var(--pad-y) var(--pad-x);">
                     <div class="col-img reveal">
-                        <img src="img/cm_validacao.png" alt="Matrizes de confusão dos quatro modelos na validação">
+                        <img src="img/baseline_vs_completo.png" alt="F1-macro e ROC AUC no teste por modelo, Baseline versus Completo">
                     </div>
                     <div class="col-side">
-                        <p class="kicker reveal" style="margin-bottom:14px;">Teste → Validação</p>
-                        <h3 class="h3 reveal" style="margin-bottom:36px;">Quanto cai em dados nunca vistos</h3>
-                        <table class="tbl delta reveal">
-                            <thead>
-                                <tr>
-                                    <th class="lft">Exp.</th>
-                                    <th>F1-macro</th>
-                                    <th>Δ</th>
-                                    <th class="col-sep">ROC AUC</th>
-                                    <th>Δ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td class="lft"><span class="expid">EXP-02</span></td><td>0,82→0,78</td><td class="neg">−0,039</td><td class="col-sep">0,90→0,86</td><td class="neg">−0,041</td></tr>
-                                <tr><td class="lft"><span class="expid">EXP-03</span></td><td>0,81→0,78</td><td class="neg">−0,027</td><td class="col-sep">0,90→0,86</td><td class="neg">−0,043</td></tr>
-                                <tr><td class="lft"><span class="expid">EXP-05</span></td><td>0,83→0,78</td><td class="neg">−0,043</td><td class="col-sep">0,91→0,87</td><td class="neg">−0,041</td></tr>
-                                <tr><td class="lft"><span class="expid">EXP-06</span></td><td>0,82→0,78</td><td class="neg">−0,036</td><td class="col-sep">0,90→0,86</td><td class="neg">−0,039</td></tr>
-                            </tbody>
-                        </table>
-                        <p class="note reveal">Quedas pequenas e uniformes (~0,03–0,04) → boa generalização.</p>
+                        <p class="kicker reveal" style="margin-bottom: 14px;">Resultados · Teste (30%)</p>
+                        <h3 class="h3 reveal" style="margin-bottom: 30px;">Desempenho dos modelos</h3>
+                        <div class="bullets reveal" style="gap: 20px;">
+                            <div class="b"><span class="mk">·</span><span>O conjunto <b>Completo</b> supera o <b>Baseline</b> nos três modelos.</span></div>
+                            <div class="b"><span class="mk">·</span><span>Árvores no topo; a Regressão Logística fica competitiva.</span></div>
+                            <div class="b"><span class="mk">·</span><span><b>Escolhido: Random Forest · Completo</b><br><span class="muted2">F1-macro <span class="mint">0,825</span> · ROC AUC <span class="mint">0,909</span>.</span></span></div>
+                        </div>
                     </div>
                 </div>
-                <p class="counter">06 / 07</p>
+                <p class="counter">06 / 09</p>
             </section>
 
-            <!-- ===== SLIDE 7 — CONCLUSÕES ===== -->
+            <!-- ===== SLIDE 7 — RESULTADOS: GENERALIZAÇÃO ===== -->
+            <section class="slide">
+                <div class="two-col-vis" style="padding: var(--pad-y) var(--pad-x);">
+                    <div class="col-img reveal">
+                        <img src="img/teste_vs_validacao.png" alt="F1-macro no teste versus na validação para os seis experimentos">
+                    </div>
+                    <div class="col-side">
+                        <p class="kicker reveal" style="margin-bottom: 14px;">Resultados · Dados nunca vistos</p>
+                        <h3 class="h3 reveal" style="margin-bottom: 30px;">O modelo generaliza?</h3>
+                        <div class="bullets reveal" style="gap: 20px;">
+                            <div class="b"><span class="mk">·</span><span>Quedas <b>pequenas e uniformes</b> do teste para a validação (~0,03–0,04).</span></div>
+                            <div class="b"><span class="mk">·</span><span>O <b>ranking</b> entre modelos se mantém.</span></div>
+                            <div class="b"><span class="mk">·</span><span>Funciona mesmo com a validação tendo <b>distribuição diferente</b> (55,8 / 44,2).</span></div>
+                        </div>
+                        <p class="note reveal" style="margin-top: 26px;">Sinal de boa generalização — sem sobreajuste evidente.</p>
+                    </div>
+                </div>
+                <p class="counter">07 / 09</p>
+            </section>
+
+            <!-- ===== SLIDE 8 — FECHAMENTO CRÍTICO ===== -->
             <section class="slide slide-content">
                 <div class="head-stack">
-                    <p class="kicker reveal">Conclusões · ancoradas nos resultados</p>
-                    <h2 class="h2 reveal">O que os números mostram</h2>
+                    <p class="kicker reveal">Fechamento crítico</p>
+                    <h2 class="h2 reveal">Dá para implantar?</h2>
                 </div>
-                <div class="concl">
-                    <div class="item reveal"><span class="mk">01</span><span class="tx"><b>Engenharia de atributos agrega ganho consistente:</b> o conjunto <b>Completo</b> supera o <b>Baseline</b> nos dois modelos, em teste e validação (F1-macro e ROC AUC).</span></div>
-                    <div class="item reveal"><span class="mk">02</span><span class="tx"><b>Melhor experimento: EXP-05</b> (Random Forest · Completo) — F1-macro <span class="q">0,826</span> e ROC AUC <span class="q">0,909</span> no teste.</span></div>
-                    <div class="item reveal"><span class="mk">03</span><span class="tx"><b>Random Forest sobreajusta mais</b> que o Gradient Boosting: gap treino–teste de F1-macro ~<span class="q">0,05</span> (RF) contra ~<span class="q">0,015</span> (GB).</span></div>
-                    <div class="item reveal"><span class="mk">04</span><span class="tx"><b>Boa generalização:</b> em dados nunca vistos as quedas são pequenas e uniformes (~0,03–0,04 em F1-macro e ROC AUC) e o ranking entre modelos se mantém.</span></div>
-                    <div class="item reveal"><span class="mk">05</span><span class="tx"><b>Robustez:</b> a validação tem distribuição de classes diferente (55,8/44,2 vs 62,3/37,7) e ainda assim as métricas permanecem estáveis.</span></div>
+                <p class="lead reveal" style="max-width: 1500px; color: var(--text); margin-bottom: 40px;">
+                    <span class="mint">Ainda não</span> como decisão autônoma. O modelo serve como
+                    <span class="em-text">apoio à triagem</span> — prioriza os casos com maior chance de serem graves,
+                    e a <span class="em-text">decisão final é do profissional</span> (humano no circuito).
+                </p>
+                <div class="bullets reveal">
+                    <div class="b"><span class="mk">!</span><span><b>Recall da classe grave:</b> o modelo deixa passar <span class="mint">~32%</span> dos casos graves nos dados nunca vistos. Em triagem, o <b>falso negativo</b> (dizer "não-grave" quando é grave) é o erro mais caro.</span></div>
+                    <div class="b"><span class="mk">!</span><span><b>Viés da fonte:</b> o OpenFDA é feito de <b>relatos voluntários</b> (subnotificação, sem causalidade comprovada) — pode não refletir toda a população clínica.</span></div>
                 </div>
-                <p class="counter">07 / 07</p>
+                <p class="counter">08 / 09</p>
+            </section>
+
+            <!-- ===== SLIDE 9 — CAMINHO PARA PRODUÇÃO ===== -->
+            <section class="slide slide-content">
+                <div class="head-stack">
+                    <p class="kicker reveal">CRISP-DM · Implantação</p>
+                    <h2 class="h2 reveal">O que falta para produção</h2>
+                </div>
+                <div class="flow reveal" style="margin-bottom: 44px;">
+                    <div class="step"><span class="n">→</span>Servir o modelo</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">→</span>Monitorar (desempenho + drift)</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">→</span>Re-treino offline periódico</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">→</span>CI/CD (dados + modelo)</div>
+                    <div class="arrow">→</div>
+                    <div class="step"><span class="n">→</span>Revalidação contínua</div>
+                    <div class="arrow">↺</div>
+                </div>
+                <div class="bullets reveal">
+                    <div class="b"><span class="mk">·</span><span><b>Monitoramento:</b> acompanhar desempenho real e mudança nos dados ao longo do tempo.</span></div>
+                    <div class="b"><span class="mk">·</span><span><b>Re-treino + revalidação:</b> reaprender com novos relatos e revalidar sempre em dados nunca vistos.</span></div>
+                </div>
+                <p class="note reveal" style="margin-top: 34px;">Implantar é um <span class="em-text">ciclo contínuo</span>, não um evento único — fecha o CRISP-DM realimentando com novos dados.</p>
+                <p class="counter">09 / 09</p>
             </section>
 
         </div>

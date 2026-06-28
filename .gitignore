@@ -13,5 +13,17 @@ datasets/
 validation/
 outputs/models/
 
+# Parquet intermediário gerado pela ingestão preguiçosa (regenerável)
+outputs/_raw_reports_*.parquet
+
+# Log de progresso e notebook executado baixado do remoto (regeneráveis)
+outputs/_progress.log
+notebooks/*.remote_trees.ipynb
+
+# CSVs intermediários grandes e predições (regeneráveis pelos notebooks)
+outputs/drug_events_*.csv
+outputs/data_preparation_metadata.json
+outputs/predicoes_*.csv
+
 # Virtual environments
 .venv
