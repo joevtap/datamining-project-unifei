@@ -25,5 +25,8 @@ outputs/drug_events_*.csv
 outputs/data_preparation_metadata.json
 outputs/predicoes_*.csv
 
+# PDF da apresentação (regenerável a partir do HTML via scripts da skill create-slides)
+apresentacao/*.pdf
+
 # Virtual environments
 .venv
